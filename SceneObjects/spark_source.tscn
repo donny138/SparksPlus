@@ -1,0 +1,75 @@
+[gd_scene load_steps=9 format=3 uid="uid://ckkrr54pqtm3c"]
+
+[ext_resource type="Script" path="res://SceneObjects/spark_source.gd" id="1_2dvxp"]
+[ext_resource type="Texture2D" uid="uid://cueixwa3juc0u" path="res://Assets/SparkSources/spark_source_test.png" id="1_a1lel"]
+[ext_resource type="PackedScene" uid="uid://4vhkomynlm7p" path="res://SceneObjects/spark.tscn" id="2_ch1h8"]
+[ext_resource type="Script" path="res://src/Tools/orbit_draw.gd" id="4_g378n"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1ey6o"]
+radius = 48.0
+
+[sub_resource type="Curve2D" id="Curve2D_oiqwp"]
+
+[sub_resource type="Curve2D" id="Curve2D_ry5px"]
+
+[sub_resource type="Curve2D" id="Curve2D_1muiw"]
+_data = {
+"points": PackedVector2Array(0, 0, 0, 0, -851, -540, 0, 0, 0, 0, 867, -536, 0, 0, 0, 0, 883, 523, 0, 0, 0, 0, -846, 528, 0, 0, 0, 0, -849, -540)
+}
+point_count = 5
+
+[node name="SparkSource" type="Area2D"]
+top_level = true
+collision_mask = 3
+script = ExtResource("1_2dvxp")
+spark_type = ExtResource("2_ch1h8")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_a1lel")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_1ey6o")
+
+[node name="SparkSpawnCountDown" type="Timer" parent="."]
+autostart = true
+
+[node name="ActiveAbilityCooldown" type="Timer" parent="."]
+one_shot = true
+
+[node name="PlayerCamera" type="Camera2D" parent="."]
+zoom = Vector2(0.75, 0.75)
+
+[node name="IdleOrbit" type="Path2D" parent="."]
+curve = SubResource("Curve2D_oiqwp")
+script = ExtResource("4_g378n")
+INIT_SIZE = 50.0
+NUM_POINTS = 32
+
+[node name="OrbitPoint" type="PathFollow2D" parent="IdleOrbit"]
+visible = false
+position = Vector2(-1, -64)
+rotation = 2.64876
+
+[node name="DefenseOrbit" type="Path2D" parent="."]
+curve = SubResource("Curve2D_ry5px")
+script = ExtResource("4_g378n")
+INIT_SIZE = 150.0
+NUM_POINTS = 32
+
+[node name="OrbitPoint" type="PathFollow2D" parent="DefenseOrbit"]
+visible = false
+position = Vector2(2, -141)
+rotation = 2.90669
+
+[node name="EnemySpawnDist" type="Path2D" parent="."]
+curve = SubResource("Curve2D_1muiw")
+
+[node name="EnemySpawnPoint" type="PathFollow2D" parent="EnemySpawnDist"]
+position = Vector2(-851, -540)
+rotation = 0.00232828
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="redraw_orbits" from="." to="IdleOrbit" method="_on_spark_source_redraw_orbits"]
+[connection signal="redraw_orbits" from="." to="DefenseOrbit" method="_on_spark_source_redraw_orbits"]
+[connection signal="timeout" from="SparkSpawnCountDown" to="." method="_on_spark_spawn_count_down_timeout"]
+[connection signal="timeout" from="ActiveAbilityCooldown" to="." method="_on_active_ability_cooldown_timeout"]

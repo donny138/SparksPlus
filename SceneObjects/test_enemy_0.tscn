@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3 uid="uid://b4vqqy5bsieek"]
+
+[ext_resource type="Texture2D" uid="uid://dfarnmpphqdhe" path="res://Assets/Enemies/placeholder_enemy_0.png" id="1_h2hvj"]
+[ext_resource type="Script" path="res://SceneObjects/test_enemy_0.gd" id="1_qd5p0"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gh1rk"]
+size = Vector2(95, 95)
+
+[node name="TestEnemy0" type="RigidBody2D"]
+collision_layer = 2
+collision_mask = 3
+gravity_scale = 0.0
+script = ExtResource("1_qd5p0")
+enemy_name = "tester"
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_h2hvj")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_gh1rk")
+
+[node name="AttackCooldown" type="Timer" parent="."]
+one_shot = true
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="timeout" from="AttackCooldown" to="." method="_on_attack_cooldown_timeout"]

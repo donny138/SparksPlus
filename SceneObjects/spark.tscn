@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://4vhkomynlm7p"]
+
+[ext_resource type="Texture2D" uid="uid://cup78ocqjehxw" path="res://Assets/Sparks/spark_texture_0.png" id="1_8xbfd"]
+[ext_resource type="Script" path="res://SceneObjects/spark.gd" id="1_s2jq7"]
+
+[node name="Spark" type="Area2D"]
+scale = Vector2(1, 1.00489)
+collision_layer = 4
+collision_mask = 2
+script = ExtResource("1_s2jq7")
+metadata/_edit_group_ = true
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_8xbfd")
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="."]
+polygon = PackedVector2Array(1.5, 1.5, 1.5, 4, -1.5, 4, -1.5, 1.5, -4, 1.5, -4, -1.5, -1.5, -1.5, -1.5, -4, 1.5, -4, 1.5, -1.5, 4, -1.5, 4, 1.5)
+
+[node name="LifeTime" type="Timer" parent="."]
+one_shot = true
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[connection signal="timeout" from="LifeTime" to="." method="_on_life_time_timeout"]
