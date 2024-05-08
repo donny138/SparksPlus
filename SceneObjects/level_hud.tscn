@@ -1,0 +1,90 @@
+[gd_scene load_steps=2 format=3 uid="uid://7dba8l5tn1n0"]
+
+[ext_resource type="Script" path="res://SceneObjects/level_hud.gd" id="1_hkwu5"]
+
+[node name="LevelHud" type="Control"]
+top_level = true
+custom_minimum_size = Vector2(900, 520)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 900.0
+offset_bottom = 520.0
+script = ExtResource("1_hkwu5")
+metadata/_edit_group_ = true
+
+[node name="TimerText" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -43.5
+offset_right = 43.5
+offset_bottom = 23.0
+grow_horizontal = 2
+text = "TIMER_INIT"
+horizontal_alignment = 1
+
+[node name="PlayerLevelInfo" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -27.5
+offset_top = -54.0
+offset_right = 27.5
+grow_horizontal = 2
+grow_vertical = 0
+metadata/_edit_group_ = true
+
+[node name="PlayerLevelText" type="HBoxContainer" parent="PlayerLevelInfo"]
+layout_mode = 2
+
+[node name="Text" type="Label" parent="PlayerLevelInfo/PlayerLevelText"]
+layout_mode = 2
+text = "Level"
+
+[node name="Number" type="Label" parent="PlayerLevelInfo/PlayerLevelText"]
+layout_mode = 2
+text = "0"
+
+[node name="LevelProgress" type="ProgressBar" parent="PlayerLevelInfo"]
+layout_mode = 2
+
+[node name="PlayerHealthInfo" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -50.0
+offset_right = 52.0
+grow_vertical = 0
+metadata/_edit_group_ = true
+
+[node name="HealthText" type="Label" parent="PlayerHealthInfo"]
+layout_mode = 2
+text = "Health"
+horizontal_alignment = 1
+
+[node name="CurrentHealthBar" type="ProgressBar" parent="PlayerHealthInfo"]
+custom_minimum_size = Vector2(200, 25)
+layout_mode = 2
+size_flags_vertical = 4
+show_percentage = false
+
+[node name="CurrentHealthText" type="Label" parent="PlayerHealthInfo/CurrentHealthBar"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -26.0
+offset_top = -11.5
+offset_right = 26.0
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+text = "0"
+horizontal_alignment = 1

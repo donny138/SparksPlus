@@ -1,27 +1,43 @@
-[gd_scene load_steps=4 format=3 uid="uid://b33jjv0al814c"]
+[gd_scene load_steps=6 format=3 uid="uid://b33jjv0al814c"]
 
 [ext_resource type="PackedScene" uid="uid://ckkrr54pqtm3c" path="res://SceneObjects/spark_source.tscn" id="1_40mi0"]
 [ext_resource type="Script" path="res://SceneObjects/level_scene.gd" id="1_xf5pb"]
 [ext_resource type="PackedScene" uid="uid://b4vqqy5bsieek" path="res://SceneObjects/test_enemy_0.tscn" id="2_ukxqv"]
+[ext_resource type="PackedScene" uid="uid://7dba8l5tn1n0" path="res://SceneObjects/level_hud.tscn" id="4_djltt"]
+[ext_resource type="PackedScene" uid="uid://dtekoebh0v4ao" path="res://SceneObjects/level_up_gui.tscn" id="5_6e2ol"]
 
 [node name="LevelScene" type="Node2D"]
 script = ExtResource("1_xf5pb")
 enemy_type = ExtResource("2_ukxqv")
-metadata/_edit_group_ = true
-
-[node name="Level Bounds" type="Polygon2D" parent="."]
-position = Vector2(62, 61)
-metadata/_edit_group_ = true
+metadata/_edit_lock_ = true
 
 [node name="SparkSource" parent="." instance=ExtResource("1_40mi0")]
 metadata/_edit_group_ = true
 
+[node name="Level Bounds" type="Polygon2D" parent="."]
+position = Vector2(62, 61)
+metadata/_edit_lock_ = true
+
 [node name="EnemySpawnCountDown" type="Timer" parent="."]
+autostart = true
+
+[node name="LevelTimer" type="Timer" parent="."]
 autostart = true
 
 [node name="Testing cube" type="Polygon2D" parent="."]
 color = Color(1, 0.227451, 1, 1)
 polygon = PackedVector2Array(-256, -169, -256, -10, -117, -13, -124, -180)
 metadata/_edit_group_ = true
+metadata/_edit_lock_ = true
+
+[node name="GuiLayer" type="CanvasLayer" parent="."]
+
+[node name="LevelHud" parent="GuiLayer" instance=ExtResource("4_djltt")]
+metadata/_edit_lock_ = true
+
+[node name="LevelUpGui" parent="GuiLayer" instance=ExtResource("5_6e2ol")]
+visible = false
+metadata/_edit_lock_ = true
 
 [connection signal="timeout" from="EnemySpawnCountDown" to="." method="_on_enemy_spawn_count_down_timeout"]
+[connection signal="timeout" from="LevelTimer" to="." method="_on_level_timer_timeout"]

@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3 uid="uid://dtekoebh0v4ao"]
+
+[ext_resource type="Script" path="res://SceneObjects/level_up_gui.gd" id="1_w3b57"]
+
+[node name="LevelUpGui" type="Control"]
+custom_minimum_size = Vector2(0, 400)
+layout_mode = 3
+anchors_preset = 0
+offset_bottom = 400.0
+script = ExtResource("1_w3b57")
+metadata/_edit_group_ = true
+
+[node name="Elements" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -296.0
+offset_top = -181.0
+offset_right = 296.0
+offset_bottom = 181.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Modifiers" type="HBoxContainer" parent="Elements"]
+layout_mode = 2
+
+[node name="Mod1" type="Button" parent="Elements/Modifiers"]
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "INSERT MOD TEXT HERE"
+
+[node name="Mod2" type="Button" parent="Elements/Modifiers"]
+layout_mode = 2
+text = "INSERT MOD TEXT HERE"
+
+[node name="Mod3" type="Button" parent="Elements/Modifiers"]
+layout_mode = 2
+text = "INSERT MOD TEXT HERE"
+
+[node name="Rerolls" type="VBoxContainer" parent="Elements"]
+layout_mode = 2
+
+[node name="Info" type="HBoxContainer" parent="Elements/Rerolls"]
+layout_mode = 2
+
+[node name="Text" type="Label" parent="Elements/Rerolls/Info"]
+layout_mode = 2
+text = "Rerolls:  "
+horizontal_alignment = 1
+
+[node name="Number" type="Label" parent="Elements/Rerolls/Info"]
+layout_mode = 2
+text = "0"
+horizontal_alignment = 1
+
+[node name="Button" type="Button" parent="Elements/Rerolls"]
+layout_mode = 2
+text = "Reroll Options"
+
+[connection signal="button_down" from="Elements/Modifiers/Mod1" to="." method="_on_mod_1_button_down"]
+[connection signal="button_down" from="Elements/Modifiers/Mod2" to="." method="_on_mod_2_button_down"]
+[connection signal="button_down" from="Elements/Modifiers/Mod3" to="." method="_on_mod_3_button_down"]
+[connection signal="button_down" from="Elements/Rerolls/Button" to="." method="_on_button_button_down"]

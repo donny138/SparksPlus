@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://ckkrr54pqtm3c"]
+[gd_scene load_steps=11 format=3 uid="uid://ckkrr54pqtm3c"]
 
 [ext_resource type="Script" path="res://SceneObjects/spark_source.gd" id="1_2dvxp"]
 [ext_resource type="Texture2D" uid="uid://cueixwa3juc0u" path="res://Assets/SparkSources/spark_source_test.png" id="1_a1lel"]
@@ -7,6 +7,12 @@
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_1ey6o"]
 radius = 48.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_8cjn7"]
+radius = 75.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_rdomy"]
+radius = 25.0
 
 [sub_resource type="Curve2D" id="Curve2D_oiqwp"]
 
@@ -23,12 +29,15 @@ top_level = true
 collision_mask = 3
 script = ExtResource("1_2dvxp")
 spark_type = ExtResource("2_ch1h8")
+active_ability_ct = 0.01
+xp_needed_per_level = 10.0
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("1_a1lel")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_1ey6o")
+debug_color = Color(0.819608, 0.266667, 0.290196, 0.419608)
 
 [node name="SparkSpawnCountDown" type="Timer" parent="."]
 autostart = true
@@ -36,8 +45,18 @@ autostart = true
 [node name="ActiveAbilityCooldown" type="Timer" parent="."]
 one_shot = true
 
-[node name="PlayerCamera" type="Camera2D" parent="."]
-zoom = Vector2(0.75, 0.75)
+[node name="PickupMagnetRange" type="Area2D" parent="."]
+collision_mask = 8
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PickupMagnetRange"]
+shape = SubResource("CircleShape2D_8cjn7")
+
+[node name="PickupCollectionRange" type="Area2D" parent="."]
+collision_mask = 8
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="PickupCollectionRange"]
+shape = SubResource("CircleShape2D_rdomy")
+debug_color = Color(0.243137, 0.623529, 0.396078, 0.419608)
 
 [node name="IdleOrbit" type="Path2D" parent="."]
 curve = SubResource("Curve2D_oiqwp")
@@ -68,8 +87,13 @@ curve = SubResource("Curve2D_1muiw")
 position = Vector2(-851, -540)
 rotation = 0.00232828
 
+[node name="PlayerCamera" type="Camera2D" parent="."]
+zoom = Vector2(0.75, 0.75)
+
 [connection signal="body_entered" from="." to="." method="_on_body_entered"]
 [connection signal="redraw_orbits" from="." to="IdleOrbit" method="_on_spark_source_redraw_orbits"]
 [connection signal="redraw_orbits" from="." to="DefenseOrbit" method="_on_spark_source_redraw_orbits"]
 [connection signal="timeout" from="SparkSpawnCountDown" to="." method="_on_spark_spawn_count_down_timeout"]
 [connection signal="timeout" from="ActiveAbilityCooldown" to="." method="_on_active_ability_cooldown_timeout"]
+[connection signal="area_entered" from="PickupMagnetRange" to="." method="_on_pickup_magnet_range_area_entered"]
+[connection signal="area_entered" from="PickupCollectionRange" to="." method="_on_pickup_collection_range_area_entered"]

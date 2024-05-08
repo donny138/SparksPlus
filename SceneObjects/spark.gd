@@ -157,17 +157,17 @@ func _on_life_time_timeout():
 	queue_free()
 
 
-# This functio gets called when the spark enters another body
+# This function gets called when the spark enters another body
 func _on_body_entered(body):
-	# decrement the sparks remaining durability
-	cur_durability = cur_durability - 1
-	
-	# tell the body that we just hit to announce itself and that it was hit by this spark
-	body.got_hit(self)
-
-	# if the spark is out of durability, destroy the spark
-	if cur_durability == 0:
-		handle_spark_break()
+	# attempt to hit the enemy
+	var hit_enemy = body.got_hit(self)
+	# if the attack successfully hit the enemy, handle how that affects the spark
+	if(hit_enemy):
+		# decrement the sparks remaining durability
+		cur_durability = cur_durability - 1
+		# if the spark is out of durability, destroy the spark
+		if cur_durability == 0:
+			handle_spark_break()
 
 
 # function to handle controlling time.  This should be connected to the "control time signal" within the level
