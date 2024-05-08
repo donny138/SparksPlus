@@ -9,39 +9,50 @@ This will instantiate an instance of teh BaseSparkSource class to use for all th
 extends Area2D
 
 # signal variables
-
 signal redraw_orbits(orbit_radius_mult) # this signal gets sent to the scripts that draw the orbit paths and tell them to redraw with some radius multiplier
 
-# variables to use for this object
 
+# configurable attributes of this object
 @export var spark_type : PackedScene # controls the type of spark this spark source spawns
 @export var active_ability_ct = 0.5
+@export var xp_needed_per_level : float	# the additional amount of xp needed in between levels
 
-# this is the object that tracks all the common spark source behavior and all our stats
-var spark_source : BaseSparkSource
-# this is the speed this object will rotate in radians per second
-var rotation_speed
-# this is a list containing all the sparks that are active
-var sparks = []
-var orbit_mult = 1.0
-var is_active_ability_ready = true
+# internal attributes of this object
+var level_hud							# pointer to the level HUD the player will see on screen
+var spark_source : BaseSparkSource		# tracks common spark source behavior and stats
+var rotation_speed						# tracks rotation speed in rads/sec
+var sparks = []							# list of active sparks in orbit
+var orbit_mult = 1.0					# multiplier to apply to orbit radius
+var is_active_ability_ready = true		# allows use of active ability when true
+var is_paused = false					# tracks if time should pass for this object
+var cur_level : int						# tracks the current level of this object
+var cur_xp_amount : float 				# the amount of xp we currently have
+var next_level_xp_amount : float 		# the amoutn of xp we need for the next level
 
-# this variable controls if time passes for this object
-var is_paused = false
+
+# ========================= Initialization and Utility Functions ====================================================
 
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	# create an instance of the spark source object with some constants specific to this spark source
-	spark_source = BaseSparkSource.new(150, 1, 10, 1, 1, 10)
+	spark_source = BaseSparkSource.new(150, 1, 10, 1, 1, 100)
 
 	# Ensure that collision is enabled
 	$CollisionShape2D.disabled = false
+	# ensure that collision for pickups is enabled
+	$PickupMagnetRange/CollisionShape2D.disabled = false
+	$PickupCollectionRange/CollisionShape2D.disabled = false
 
 	# initialize the spark spawning timer
 	$SparkSpawnCountDown.wait_time = spark_source.spark_gen_rate
 
-	# initialize some constants
+	# we start at level 0
+	cur_level = 0
+	# set the initial amount of xp needed to advance to the next level
+	next_level_xp_amount = xp_needed_per_level
+
+	# initialize some temporary constants
 	rotation_speed = PI/3
 
 	# connect to the time control signal
@@ -93,8 +104,15 @@ func _process(delta):
 		auto_adjust_spark_orbit_pos()
 
 
+# function to perform initial hud updates once the hud gui exists
+func init_hud_update():
+	# update the health display
+	# TODO:  Update this when stats are moved into this class
+	level_hud.update_health(spark_source.health, spark_source.base_health)
+	# TODO: update the curent xp progress and level if player can start with values above 0
 
 
+# =====================  Helper Functions =======================
 
 # function to alter the orbit position that each spark tries to maintain so that they are evenly distributed
 func auto_adjust_spark_orbit_pos():
@@ -116,7 +134,6 @@ func auto_adjust_spark_orbit_pos():
 			# TODO: isloate fractional component?  may not be needed
 			# set the orbit point for the next spark
 			sparks[start_index + i].orbit_point = next_point
-
 
 
 # function to handle removing a spark from the list of active sparks if it has not been fired
@@ -142,9 +159,44 @@ func remove_spark(spark):
 func hit_by_enemy(enemy):
 	# take damage based on the enemies attack damage
 	spark_source.health = spark_source.health - enemy.damage
-	print("Just took ", enemy.damage, " damage.  ", spark_source.health, " health remaining")
+	# update the hud to reflect the current health status
+	# TODO: Update this once stats are moved back into this class
+	level_hud.update_health(spark_source.health, spark_source.base_health)
 
 
+# function to check and handle triggering a level up
+func level_up():
+	# check to see if we can level up
+	if (cur_xp_amount >= next_level_xp_amount):
+		# remove the xp used to level up
+		cur_xp_amount = cur_xp_amount - next_level_xp_amount
+		# update the amount of xp needed for the next level
+		#TODO: update this calculation to be more balanced
+		next_level_xp_amount = next_level_xp_amount + xp_needed_per_level
+		# increment the current level by one
+		cur_level = cur_level + 1
+
+		# update the level on the level_hud gui
+		level_hud.update_level(cur_level)
+		
+		# Trigger the level up gui
+		get_parent().trigger_level_up_gui()		
+	
+	# update the xp bar on the hud to reflect the current amount
+	level_hud.update_xp(cur_xp_amount, next_level_xp_amount)
+
+
+# ================== Pickup object handlers ============================
+
+# function to pickup a given xp orb
+func pick_up_xp_orb(xp_orb):
+	# add the xp from the orb to the spark source
+	#TODO: add xp modifiers to this calculation
+	cur_xp_amount = cur_xp_amount + xp_orb.xp_value
+	# call the level up function to see if we can level up and handle it as needed
+	level_up()
+	# remove the xp orb from the game
+	xp_orb.call_deferred("queue_free")
 
 # =================== Functions triggered by signals / events =========================
 
@@ -198,6 +250,20 @@ func _on_body_entered(body):
 	pass # Replace with function body.
 
 
+# function to handle when an area object enters the pickup magnet
+func _on_pickup_magnet_range_area_entered(area):
+	# the magnet pickup range only detects pickup-able things and should pull them towards the center of the spark source
+	# magnetize the object to this object
+	area.magnetize_to(self)
+
+
+# function to handle when a area object enters the pickup collection range
+func _on_pickup_collection_range_area_entered(area):
+	# the collection range only detects pickup-able thigs and should collect whatever it touches
+	# the object should call a handler for the correct pick-up behavior
+	area.pick_up(self)
+
+
 # function to handle controlling time.  This should be connected to the "control time signal" within the level
 func handle_control_time(freeze_time):
 	# freeze time or resume time depending on the given input
@@ -210,6 +276,8 @@ func handle_control_time(freeze_time):
 	else:
 		# disable the is_paused flag
 		is_paused = false
+
+
 
 
 

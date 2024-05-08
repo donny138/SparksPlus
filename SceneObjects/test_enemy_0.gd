@@ -31,6 +31,11 @@ extends RigidBody2D
 @export var rot_dir = 0		# this affects the direction of rotation
 @export var attack_ct = 0.5 # this is the attack cooldown time for this enemy
 
+# temp configurable attributes
+@export var xp_orb : PackedScene
+@export var xp_orb_count_min : int
+@export var xp_orb_count_max : int
+
 # internal attributes of this enemy
 var cur_health				# tracks the current amount of health this enemy has
 var max_health				# tracks the maximum amount of health this enemy can have
@@ -39,6 +44,7 @@ var cur_damage				# the current damage the enemy deals on hit
 var active_debufs = []		# a list of debuffs currently affecting the enemy (damage over time, slow, etc)
 var spark_source 			# this is a pointer to the spark source object (the player)
 var is_attack_available = true # this controls whether or not this enemy can hit the player
+var is_alive : bool			# tracks if the enemy is alive
 
 # variable to track if time passes for this object or not
 var is_paused
@@ -67,7 +73,8 @@ func _ready():
 	max_health = health
 	cur_health = max_health
 	cur_speed = speed
-	
+	# the enemy starts out alive
+	is_alive = true
 	# connect to the time control signal
 	get_parent().control_time.connect(handle_control_time)
 
@@ -98,13 +105,19 @@ func _process(delta):
 
 # function that gets called when a spark hits this object
 func got_hit(spark):
-	# take damage based on the damage that the given spark object will deal
-	cur_health = cur_health - spark.damage
+	var was_hit = false
+	# it's possible for two sparks to hit the enemy in the same frame, so detect if we are still alive
+	if (is_alive):
+		# handle being hit by the spark
+		was_hit = true
+		# take damage based on the damage that the given spark object will deal
+		cur_health = cur_health - spark.damage
+		# if hp has run out, then the enemy dies
+		if cur_health <= 0:
+			on_death()
 	
-	# if hp has run out, then the enemy dies
-	if cur_health <= 0:
-		print("THE ENEMY HAS BEEN SLAIN")
-		on_death()
+	# return a status indicating if the attack hit the enemy or not
+	return was_hit
 
 
 # function to manage hitting the spark source
@@ -125,16 +138,21 @@ func hit_spark_source():
 #TODO:  modify this to add additional on death behavior
 # function to handle any special behavior when this enemy dies
 func on_death():
-	# TODO:  drop xp / do on death things
+	is_alive = false
+	# spawn xp orbs on death
+	# TODO: pull this from a different place than a predefined scene object
+	var new_xp_orb
+	for i in range(randi_range(xp_orb_count_min, xp_orb_count_max)):
+		new_xp_orb = xp_orb.instantiate()
+		new_xp_orb.position = position
+		# put the xp orb in as a child of the level
+		get_parent().call_deferred("add_child", new_xp_orb)
 
 	# tell the level to remove this enemy from the list of active enemies
-	get_parent().remove_active_enemy(self)
+	get_parent().call_deferred("remove_active_enemy", self)
 
 	# remove this object from the game
-	queue_free()
-
-
-
+	self.call_deferred("queue_free")
 
 
 

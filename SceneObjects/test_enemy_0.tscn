@@ -1,7 +1,8 @@
-[gd_scene load_steps=4 format=3 uid="uid://b4vqqy5bsieek"]
+[gd_scene load_steps=5 format=3 uid="uid://b4vqqy5bsieek"]
 
 [ext_resource type="Texture2D" uid="uid://dfarnmpphqdhe" path="res://Assets/Enemies/placeholder_enemy_0.png" id="1_h2hvj"]
 [ext_resource type="Script" path="res://SceneObjects/test_enemy_0.gd" id="1_qd5p0"]
+[ext_resource type="PackedScene" uid="uid://kwvvse6flnbt" path="res://SceneObjects/xp_orb_0.tscn" id="2_thhgu"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_gh1rk"]
 size = Vector2(95, 95)
@@ -12,6 +13,9 @@ collision_mask = 3
 gravity_scale = 0.0
 script = ExtResource("1_qd5p0")
 enemy_name = "tester"
+xp_orb = ExtResource("2_thhgu")
+xp_orb_count_min = 2
+xp_orb_count_max = 3
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("1_h2hvj")
