@@ -14,7 +14,8 @@ var spark_source				# this is a pointer to the spark_source (player) object
 func _ready():
 	# set the size of the gui container to match the size of the camera
 	size = get_window().size
-	pass # Replace with function body.
+	# make sure that the hud is visible
+	show()
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.

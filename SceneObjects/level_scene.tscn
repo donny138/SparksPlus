@@ -33,6 +33,7 @@ metadata/_edit_lock_ = true
 [node name="GuiLayer" type="CanvasLayer" parent="."]
 
 [node name="LevelHud" parent="GuiLayer" instance=ExtResource("4_djltt")]
+visible = false
 metadata/_edit_lock_ = true
 
 [node name="LevelUpGui" parent="GuiLayer" instance=ExtResource("5_6e2ol")]
