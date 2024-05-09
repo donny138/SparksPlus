@@ -29,11 +29,26 @@ var spark_source 			# pointer to the active spark source (the player)
 var level_hud 				# pointer to the level hud
 var level_up_gui			# pointer to the leve up gui
 var active_enemies = []		# a list of enemy objects that are currently active
+var active_level_unlockables = [] # a list of level unlockables that the player has activated and how many many times they have been chosen
+
+# modifiers and ability attributes
+var level_mods = []
+var enemy_mods = []
+var level_abilities = []
+var enemy_abilities = []
 
 # time related vars
 var time_passed_sec 		# tracks the number of seconds that have passed since the level started
 var pause_menu_active = false
-var leveling_up = false
+var disable_paise_menu = false
+
+# TEMPORARY VARIABLES ONLY
+# list of level unlockables that can appear for testing
+var temp_valid_unlockables = [
+	OverclockedSparks,
+	PickUpRangeUp,
+	RocketSparks
+]
 
 
 # Called when the node enters the scene tree for the first time.
@@ -68,7 +83,7 @@ func _process(delta):
 	if Input.is_action_just_pressed("pause_menu"):
 		# if the pause menu is not active, activate it. If it is, deactivate it
 		# don't do this if we are leveling up, level up gui needs input before game can resume
-		if not leveling_up:
+		if not disable_paise_menu:
 			control_time.emit(not pause_menu_active)
 			pause_menu_active = not pause_menu_active
 
@@ -143,30 +158,78 @@ func trigger_level_up_gui():
 	# TODO: Finalize this behavior
 
 	# pause time
-	leveling_up = true
+	disable_paise_menu = true
 	control_time.emit(true)
 
 	# TODO: add a cool visual effect / sound trigger here at some point
 	# put a blur effect onto everything normally in the game (hud too, but not level up gui)
 
-	# TODO: implement random modifer selection once modifiers exist
-	# pick 3 available modifiers
-	# Pass the modifiers off to the level up gui (it will associate each option with a button and display the description)
-	var fake_mod_list = [1,2,3]
-	level_up_gui.load_modifiers(fake_mod_list)
+	# TODO: implement random level unlockable selection once modifiers exist
+	# randomly pick 3 available level unlockables (TODO make random)
+	var fake_mod_list = [
+		temp_valid_unlockables[0].new(),
+		temp_valid_unlockables[1].new(),
+		temp_valid_unlockables[2].new()
+	]
+	# Pass the level unlockables off to the level up gui (it will associate each option with a button and display the description)
+	level_up_gui.load_level_unlock_options(fake_mod_list)
 
 	# tell the level up gui to un-hide itself and wait for the user to click one of the options
 	level_up_gui.enable_gui()
 
 
 # function to apply the selected mod from the level up event and flag it as complete
-func finish_level_up_event(selected_mod):
+func finish_level_up_event(chosen_unlock : LevelUnlockable):
 	#TODO:  flush out this behavior once mods are actually added
-	print("Selected Mod: ", selected_mod)
+	#print("Selected Mod: ", chosen_unlock)
+
+	# Add this level unlockable to the list of activated unlockables
+	var repeat_unlock = false
+	for unlock : Array in active_level_unlockables:
+		# if the unlockable is already in the list of chosen unlockables, add one to the number of times it has been picked
+		if unlock[0] == chosen_unlock.name:
+			unlock[1] = unlock[1] + 1
+			repeat_unlock = true
+			print(chosen_unlock.name, " Has been unlocked ", unlock[1], " times!")
+	# if the unlock was not already present in the list, add it to the end
+	if not repeat_unlock:
+		var entry = [
+			chosen_unlock.name,
+			1
+		]
+		active_level_unlockables.append(entry)
+		print(chosen_unlock.name, " Has been unlocked for the first time!")
+
+	# Add Modifiers from the chosen unlock to the spark source
+	var new_mods = Consts.filter_mods_by_target(chosen_unlock.mods, Consts.ModTarget_e.spark_source)
+	for mod : Mod in new_mods:
+		spark_source.spark_source_mods.append(mod)
+	
+	# Add Modifiers from the chosen unlock to the spark mod list on the spark source
+	new_mods = Consts.filter_mods_by_target(chosen_unlock.mods, Consts.ModTarget_e.spark)
+	for mod : Mod in new_mods:
+		spark_source.spark_mods.append(mod)
+	
+	# Add Modifiers from the chosen unlock to the level 
+	new_mods = Consts.filter_mods_by_target(chosen_unlock.mods, Consts.ModTarget_e.level)
+	for mod : Mod in new_mods:
+		level_mods.append(mod)
+	
+	# Add Modifiers from the chosen unlock to the enemy mod list within the level
+	new_mods = Consts.filter_mods_by_target(chosen_unlock.mods, Consts.ModTarget_e.enemy)
+	for mod : Mod in new_mods:
+		enemy_mods.append(mod)
+
+	# tell the spark source to update it's current attributes to make sure that they account for the new modifiers
+	spark_source.update_attributes()
+
+	# TODO: Add Abilities to arrays in the level and on the spark source
+
 	
 	# resume time
-	leveling_up = false
-	control_time.emit(false)
+	
+	# start the unpause delay timer so that there is a small delay after the gui goes away before time resumes
+	$UnpauseDelayTimer.start()
 
 
 
@@ -194,7 +257,13 @@ func _on_level_timer_timeout():
 	level_hud.update_time(time_passed_sec)
 
 
-
+# function to resume the game when the unpause timer expires
+func _on_unpause_delay_timer_timeout():
+	# emit the event to trigger game objects to resume
+	control_time.emit(false)
+	# allow the pause menu to work normally
+	disable_paise_menu = false
+	
 
 
 

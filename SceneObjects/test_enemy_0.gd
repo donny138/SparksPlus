@@ -111,7 +111,7 @@ func got_hit(spark):
 		# handle being hit by the spark
 		was_hit = true
 		# take damage based on the damage that the given spark object will deal
-		cur_health = cur_health - spark.damage
+		cur_health = cur_health - spark.cur_damage
 		# if hp has run out, then the enemy dies
 		if cur_health <= 0:
 			on_death()

@@ -24,22 +24,74 @@ offset_bottom = 181.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Modifiers" type="HBoxContainer" parent="Elements"]
+[node name="LevelUnlocks" type="HBoxContainer" parent="Elements"]
 layout_mode = 2
 
-[node name="Mod1" type="Button" parent="Elements/Modifiers"]
+[node name="Unlock1" type="VBoxContainer" parent="Elements/LevelUnlocks"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Elements/LevelUnlocks/Unlock1"]
+layout_mode = 2
+text = "TITLE HERE"
+horizontal_alignment = 1
+
+[node name="Button" type="Button" parent="Elements/LevelUnlocks/Unlock1"]
 custom_minimum_size = Vector2(200, 300)
 layout_mode = 2
-size_flags_horizontal = 4
-text = "INSERT MOD TEXT HERE"
 
-[node name="Mod2" type="Button" parent="Elements/Modifiers"]
-layout_mode = 2
-text = "INSERT MOD TEXT HERE"
+[node name="Desc" type="Label" parent="Elements/LevelUnlocks/Unlock1/Button"]
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "INSERT UNLOCK TEXT HERE"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
 
-[node name="Mod3" type="Button" parent="Elements/Modifiers"]
+[node name="Unlock2" type="VBoxContainer" parent="Elements/LevelUnlocks"]
 layout_mode = 2
-text = "INSERT MOD TEXT HERE"
+
+[node name="Title" type="Label" parent="Elements/LevelUnlocks/Unlock2"]
+layout_mode = 2
+text = "TITLE HERE"
+horizontal_alignment = 1
+
+[node name="Button" type="Button" parent="Elements/LevelUnlocks/Unlock2"]
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 2
+
+[node name="Desc" type="Label" parent="Elements/LevelUnlocks/Unlock2/Button"]
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "INSERT UNLOCK TEXT HERE"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+
+[node name="Unlock3" type="VBoxContainer" parent="Elements/LevelUnlocks"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="Elements/LevelUnlocks/Unlock3"]
+layout_mode = 2
+text = "TITLE HERE"
+horizontal_alignment = 1
+
+[node name="Button" type="Button" parent="Elements/LevelUnlocks/Unlock3"]
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 2
+
+[node name="Desc" type="Label" parent="Elements/LevelUnlocks/Unlock3/Button"]
+custom_minimum_size = Vector2(200, 300)
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "INSERT UNLOCK TEXT HERE"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
 
 [node name="Rerolls" type="VBoxContainer" parent="Elements"]
 layout_mode = 2
@@ -61,7 +113,12 @@ horizontal_alignment = 1
 layout_mode = 2
 text = "Reroll Options"
 
-[connection signal="button_down" from="Elements/Modifiers/Mod1" to="." method="_on_mod_1_button_down"]
-[connection signal="button_down" from="Elements/Modifiers/Mod2" to="." method="_on_mod_2_button_down"]
-[connection signal="button_down" from="Elements/Modifiers/Mod3" to="." method="_on_mod_3_button_down"]
+[node name="EnableButtons" type="Timer" parent="."]
+wait_time = 0.5
+one_shot = true
+
+[connection signal="button_down" from="Elements/LevelUnlocks/Unlock1/Button" to="." method="_on_unlock_1_button_down"]
+[connection signal="button_down" from="Elements/LevelUnlocks/Unlock2/Button" to="." method="_on_unlock_2_button_down"]
+[connection signal="button_down" from="Elements/LevelUnlocks/Unlock3/Button" to="." method="_on_unlock_3_button_down"]
 [connection signal="button_down" from="Elements/Rerolls/Button" to="." method="_on_button_button_down"]
+[connection signal="timeout" from="EnableButtons" to="." method="_on_enable_buttons_timeout"]

@@ -9,17 +9,45 @@ This will instantiate an instance of teh BaseSparkSource class to use for all th
 extends Area2D
 
 # signal variables
-signal redraw_orbits(orbit_radius_mult) # this signal gets sent to the scripts that draw the orbit paths and tell them to redraw with some radius multiplier
+signal redraw_idle_orbit(orbit_radius)
+signal redraw_defense_orbit(orbit_radius)	
 
 
 # configurable attributes of this object
-@export var spark_type : PackedScene # controls the type of spark this spark source spawns
-@export var active_ability_ct = 0.5
+@export var base_health : float			# the base health of the spark source
+@export var base_speed : float			# the base speed of the spark source
+@export var base_defense : float		# the base defense of the spark source (NYI, DOES NOTHING)
+@export var base_spark_gen_rate : float # the base time (seconds) it takes to generate a spark
+@export var base_spark_cap : int		# the base number of sparks that can be in orbit
+@export var base_xp_mult : float		# base multiplier for xp gain
+@export var base_pickup_range : float   # base radius of the magnetic effect for pickupables around the spark source
+@export var base_idle_orbit : float 	# base radius of the idle spark orbit
+@export var base_defense_orbit : float	# base radius of the defensive orbit the sparks fly in
+@export var spark_type : PackedScene 	# controls the type of spark this spark source spawns
+@export var base_active_ability_ct : float# base time (in seconds) between uses of the active ability
 @export var xp_needed_per_level : float	# the additional amount of xp needed in between levels
 
-# internal attributes of this object
+# internal game attributes:
+var max_health : float					# max health (after mods) the spark source can have
+var cur_health : float					# current health the spark source has
+var cur_speed : float					# current speed (after mods) the spark source can travel (pixels / second)=
+var cur_defense : float					# current defense (after mods) of the spark source (NYI, DOES NOTHING)
+var cur_spark_gen_rate : float			# current time (seconds) (after mods) it takes to generate a spark
+var cur_spark_cap : int					# current max count of sparks (after mods)
+var cur_xp_mult : float					# current xp mult (after mods)
+var cur_pickup_range : float			# current radius of magnetic pickup zone (after mods) around the spark source
+var cur_idle_orbit : float				# current radius of the idle spark orbit
+var cur_defense_orbit : float			# current radius of the defensive spark orbit
+var cur_active_ability_ct : float		# current time (seconds) (after mods) between uses of the active ability
+
+# modifier and ability attributes
+var spark_source_mods : Array			# array of modifiers the spark source posses that target itself
+var spark_mods : Array					# array of modifiers that should be applied to sparks when they're generated
+var spark_source_abilities : Array 		# array of abilities that should be applied to the spark source
+var spark_abilities : Array 			# array of abilities that should be applied to sparks when they're generated
+
+# logic and game objects
 var level_hud							# pointer to the level HUD the player will see on screen
-var spark_source : BaseSparkSource		# tracks common spark source behavior and stats
 var rotation_speed						# tracks rotation speed in rads/sec
 var sparks = []							# list of active sparks in orbit
 var orbit_mult = 1.0					# multiplier to apply to orbit radius
@@ -35,8 +63,12 @@ var next_level_xp_amount : float 		# the amoutn of xp we need for the next level
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	# create an instance of the spark source object with some constants specific to this spark source
-	spark_source = BaseSparkSource.new(150, 1, 10, 1, 1, 100)
+	# initialize health values to their starting amount
+	max_health = base_health
+	cur_health = max_health
+
+	# Initialze current spark source attributes to base values / with any starting modifiers
+	update_attributes()
 
 	# Ensure that collision is enabled
 	$CollisionShape2D.disabled = false
@@ -45,7 +77,8 @@ func _ready():
 	$PickupCollectionRange/CollisionShape2D.disabled = false
 
 	# initialize the spark spawning timer
-	$SparkSpawnCountDown.wait_time = spark_source.spark_gen_rate
+	$SparkSpawnCountDown.wait_time = cur_spark_gen_rate
+	$SparkSpawnCountDown.start()
 
 	# we start at level 0
 	cur_level = 0
@@ -77,7 +110,7 @@ func _process(delta):
 	if Input.is_action_pressed("move_down"):
 		velocity.y = velocity.y + 1
 	
-	velocity = velocity.normalized() * spark_source.speed
+	velocity = velocity.normalized() * cur_speed
 
 	# adjust the position of the spark source based on the calculated velocity
 	position = position + (velocity * delta)
@@ -88,7 +121,7 @@ func _process(delta):
 	# handle the player using their active ability
 	if (Input.is_action_just_pressed("active_ability") or Input.is_action_pressed("active_ability")) and (sparks.size() > 0) and is_active_ability_ready:
 		# the active ability has been used, start the cool down timer
-		$ActiveAbilityCooldown.wait_time = active_ability_ct
+		$ActiveAbilityCooldown.wait_time = cur_active_ability_ct
 		$ActiveAbilityCooldown.start()
 		# the active ability was just used, set it's ready status to false
 		is_active_ability_ready = false
@@ -108,7 +141,7 @@ func _process(delta):
 func init_hud_update():
 	# update the health display
 	# TODO:  Update this when stats are moved into this class
-	level_hud.update_health(spark_source.health, spark_source.base_health)
+	level_hud.update_health(cur_health, max_health)
 	# TODO: update the curent xp progress and level if player can start with values above 0
 
 
@@ -158,10 +191,10 @@ func remove_spark(spark):
 # function to handle being hit by an enemy
 func hit_by_enemy(enemy):
 	# take damage based on the enemies attack damage
-	spark_source.health = spark_source.health - enemy.damage
+	cur_health = cur_health - enemy.damage
 	# update the hud to reflect the current health status
 	# TODO: Update this once stats are moved back into this class
-	level_hud.update_health(spark_source.health, spark_source.base_health)
+	level_hud.update_health(cur_health, max_health)
 
 
 # function to check and handle triggering a level up
@@ -186,6 +219,66 @@ func level_up():
 	level_hud.update_xp(cur_xp_amount, next_level_xp_amount)
 
 
+
+# ==================== Modifier Functions ============================
+
+
+# function to update all of the spark sources current attributes based on it's base value and it's list of modifiers
+func update_attributes():
+	# this function assumes that spark_source_mods is up to date and contains all the mods that it should
+
+	# TODO:  Optimize the mod search, current alg is iterating through the list of modifiers once FOR EACH moddable attribute, only needs to do it once
+	# isloate the modifiers that apply to each attribute and apply them to the current value on the spark source
+
+	# Modify Health
+	var health_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.health)
+	var health_ratio = cur_health / max_health
+	max_health = Consts.calc_mods(health_mods, base_health)
+	# the current health should (percentage wise) be the same as before the mod was applied
+	cur_health = max_health * health_ratio
+
+	# Modify Speed
+	var speed_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.speed)
+	cur_speed = Consts.calc_mods(speed_mods, base_speed)
+
+	# Modify Defense
+	var defense_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.defense)
+	cur_defense = Consts.calc_mods(defense_mods, base_defense)
+
+	# Modify Spark Gen Rate
+	var spark_gen_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.spark_gen)
+	cur_spark_gen_rate = Consts.calc_mods(spark_gen_mods, base_spark_gen_rate)
+
+	# Modify Spark Cap
+	var spark_cap_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.spark_cap)
+	cur_spark_cap = int(Consts.calc_mods(spark_cap_mods, float(base_spark_cap)))
+
+	# Modify xp multiplier
+	var xp_mult_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.xp_mult)
+	cur_xp_mult = Consts.calc_mods(xp_mult_mods, base_xp_mult)
+
+	# Modify the active ability cooldown time
+	var active_ability_ct_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.active_abil_ct)
+	cur_active_ability_ct = Consts.calc_mods(active_ability_ct_mods, base_active_ability_ct)
+
+	# Modify the current pickup range 
+	var pickup_range_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.pickup_range)
+	cur_pickup_range = Consts.calc_mods(pickup_range_mods, base_pickup_range)
+	# apply the pickup range to the pickup magnet range object
+	$PickupMagnetRange/CollisionShape2D.shape.radius = cur_pickup_range
+
+	# Modify the orbits the sparks take
+	var orbit_range_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.orbit_range)
+	cur_idle_orbit = Consts.calc_mods(orbit_range_mods, base_idle_orbit)
+	cur_defense_orbit = Consts.calc_mods(orbit_range_mods, base_defense_orbit)
+	# redraw the orbits
+	redraw_idle_orbit.emit(cur_idle_orbit)
+	redraw_defense_orbit.emit(cur_defense_orbit)
+
+
+
+
+
 # ================== Pickup object handlers ============================
 
 # function to pickup a given xp orb
@@ -204,17 +297,16 @@ func pick_up_xp_orb(xp_orb):
 # This is called when the spark countdown timer is called
 func _on_spark_spawn_count_down_timeout():
 	# reset the time until the next spark spawn
-	$SparkSpawnCountDown.wait_time = spark_source.spark_gen_rate
+	$SparkSpawnCountDown.wait_time = cur_spark_gen_rate
 	
 	# if we have not yet hit our cap, spawn a spark
-	if sparks.size() < spark_source.spark_cap:
+	if sparks.size() < cur_spark_cap:
 		var new_spark = spark_type.instantiate()
 	
 		# set the stats of the spark accordingly
 		new_spark.spark_source = self
-		new_spark.damage = 5
-		new_spark.speed = 250
 		new_spark.position = position
+		new_spark.mods = spark_mods
 
 		# add the spark to the list so we can track it
 		get_parent().add_child(new_spark)

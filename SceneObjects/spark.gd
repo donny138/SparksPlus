@@ -9,39 +9,52 @@ This class handles the sparks interactions in physical space and connecting with
 extends Area2D
 
 
-# signals
-
-
-# attributes of this class
-
 # this is the logical spark object that holds all the logical info
 var spark : BaseSpark
-# if the spark is "fired" it will no longer orbit the spark source or follow any patterns
-@export var has_been_fired = false
-# this is the rotational speed of the spark
-@export var rotation_speed = 0
-@export var damage = 0
-@export var speed = 0
-@export var orbit_rate = 0.0
 
-@export var max_durability = 1		# this controls how many things the spark can hit before it is destroyed
-var cur_durability					# this tracks how much durability the spark has left
 
+
+# configurable base attributes of the spark
+
+@export var base_damage : float
+@export var base_speed : float
+@export var base_orbit_rate = ((2 * PI) / 10) * 1.7
+@export var base_durability : int					# this controls how many things the spark can hit before it is destroyed
+
+# current attributes of the spark
+var cur_damage : float
+var cur_speed : float
+var cur_durability : int
+
+# Pointers and misc internal variables
 var spark_source
 var orbit_point
+var has_been_fired = false
 var fixed_velocity_vector : Vector2
+var cur_orbit_rate : float
+var rotation_speed : float
 
+# time related attributes
+var is_paused = false
 var fired_life_time
 
-# controls if this object is paused
-var is_paused = false
+# modifiers and abilities
+var mods = []
+var abilities = []
+
+
 
 
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	# use the values that will be set by a caller to initialize the logical spark
-	spark = BaseSpark.new(damage, speed, [])
+	spark = BaseSpark.new(base_damage, base_speed, [])
+	# calculate a base orbit rate based on the base speed and idle orbit size
+	base_orbit_rate = TAU / (((TAU * spark_source.base_defense_orbit) / base_speed) * 1.5)
+	# initialze the current attributes based on the base attributes of the spark
+	update_attributes()
+
 	# initialze the rotational speed of the spark
 	rotation_speed = PI/2
 	
@@ -52,10 +65,6 @@ func _ready():
 	# - max spark count depenendancy means they'll be spaced out evenly
 	# - speed dependency means they will actually keep up with the orbit
 	# - also depends on radius of the orbit once that is a factor
-	orbit_rate = ((2 * PI) / 10) * 1.7
-
-	# configure the initial durability to be the sparks max durability
-	cur_durability = max_durability
 
 	# this configures how long the projectile lasts once it is fired (in seconds)
 	fired_life_time = 3
@@ -86,7 +95,7 @@ func _process(delta):
 		velocity_direction = fixed_velocity_vector
 		# set the target position to the position it will have a second from now 
 		# this prevents the later calculations from reducing the speed
-		target_position = position + (speed * velocity_direction * (delta + 1))
+		target_position = position + (cur_speed * velocity_direction * (delta + 1))
 
 	# if the spark is in special orbit, handle how it moves
 	elif Input.is_action_pressed("defense_ability"):
@@ -104,18 +113,21 @@ func _process(delta):
 
 	# work out if we are traveling more than needed to get to our destination and reduce if more
 	var dist_to = position.distance_to(target_position)
-	var delta_position = velocity_direction * speed * delta
-	if (speed * delta) > dist_to:
-		delta_position = velocity_direction * dist_to * delta
+	var delta_position = velocity_direction * cur_speed * delta
 	# adjust our actual position accordingly
-	position = position + delta_position
+	if (cur_speed * delta) > (dist_to * 2):
+		position = target_position
+	else:
+		position = position + delta_position
 
 	# adjust the rotation of the spark
 	rotation = rotation + (rotation_speed * delta)
 
 	# increment how far along it's orbit the spark should be
-	orbit_point = orbit_point + (orbit_rate * delta)
+	orbit_point = orbit_point + (cur_orbit_rate * delta)
 
+
+# ======================= Handling special spark behavior ==================================
 
 
 # this function handles launching the spark out of any orbits (this happens when the user uses an active ability)
@@ -145,6 +157,33 @@ func handle_spark_break():
 	# remove the spark object from the game
 	queue_free()
 	
+
+
+
+# ======================== Modifier Handling ============================
+
+
+# function to determine current attributes based on base values and modifiers
+func update_attributes():
+	# this function assumes the "mods" array contains the right modifiers to apply to the spark
+	# TODO:  change particle effects or colors here based on mods?
+
+	# increment through each of the modifiable attributes and apply them accordingly
+
+	# Damage attribute calculation
+	var damage_mods = Consts.filter_mods_by_attribute(mods, Consts.ModAttribute_e.damage)
+	cur_damage = Consts.calc_mods(damage_mods, base_damage)
+
+	# Speed attribute calculation
+	var speed_mods = Consts.filter_mods_by_attribute(mods, Consts.ModAttribute_e.speed)
+	cur_speed = Consts.calc_mods(speed_mods, base_speed)
+	cur_orbit_rate = TAU / (((TAU * spark_source.cur_defense_orbit) / cur_speed) * 1.3)
+	
+
+	# Durability attribute calculation
+	var durability_mods = Consts.filter_mods_by_attribute(mods, Consts.ModAttribute_e.durability)
+	cur_durability = int(Consts.calc_mods(durability_mods, float(base_durability)))
+
 
 
 

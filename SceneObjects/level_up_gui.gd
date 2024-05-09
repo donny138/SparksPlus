@@ -9,9 +9,9 @@ extends Control
 # internal attributes of the gui
 #var spark_source 				# pointer to the spark source object
 var level						# pointer to the level object
-var mod_1						# the modifier associated with button 1
-var mod_2						# the modifier associated with button 2
-var mod_3						# the modifier associated with button 3
+var unlock_1					# the modifier associated with button 1
+var unlock_2					# the modifier associated with button 2
+var unlock_3					# the modifier associated with button 3
 
 
 
@@ -38,6 +38,10 @@ func _process(delta):
 # function to enable the gui and all the things on it
 func enable_gui():
 	# TODO: if things need to be disabled while it is hidden, add re-enabling behavior here
+
+	# begin the timer that will re-enable the buttons
+	$EnableButtons.start()
+
 	# show the gui
 	show()
 
@@ -45,18 +49,31 @@ func enable_gui():
 # function to disable the gui and all the things on it
 func disable_gui():
 	# TODO: if things need to be disabled while it is hidden, do that here
+	
+	# disable buttons so that they can't be clicked on 
+	disable_gui_buttons()
+
 	# hide the gui
 	hide()
 
 
 # function to populate the gui with new modifier options
-func load_modifiers(mod_list):
+func load_level_unlock_options(level_unlocks : Array):
 	# store the elements from the modlist
-	mod_1 = mod_list[0]
-	mod_2 = mod_list[1]
-	mod_3 = mod_list[2]
+	unlock_1 = level_unlocks[0]
+	unlock_2 = level_unlocks[1]
+	unlock_3 = level_unlocks[2]
 
 	# update the text of each option button to reflect it's new modifier
+	# update unlock1
+	$Elements/LevelUnlocks/Unlock1/Title.text = unlock_1.name
+	$Elements/LevelUnlocks/Unlock1/Button/Desc.text = unlock_1.desc
+	# update unlock2
+	$Elements/LevelUnlocks/Unlock2/Title.text = unlock_2.name
+	$Elements/LevelUnlocks/Unlock2/Button/Desc.text = unlock_2.desc
+	# update unlock3
+	$Elements/LevelUnlocks/Unlock3/Title.text = unlock_3.name
+	$Elements/LevelUnlocks/Unlock3/Button/Desc.text = unlock_3.desc
 
 	# update tooltips of each option button (if applicable)
 
@@ -65,36 +82,58 @@ func load_modifiers(mod_list):
 
 
 # function to provide a modifier back to the main level scene
-func select_mod(selected_mod):
+func select_unlock(selected_unlock):
 	# disable this gui
 	disable_gui()
 
 	# pass the selected modifier back to the main level scene
-	level.finish_level_up_event(selected_mod)
+	level.finish_level_up_event(selected_unlock)
 
+
+
+# function to disable all the buttons on the gui
+func disable_gui_buttons():
+	# disable all the buttons on the interface so that the player can't click on them
+	$Elements/LevelUnlocks/Unlock1/Button.disabled = true
+	$Elements/LevelUnlocks/Unlock2/Button.disabled = true
+	$Elements/LevelUnlocks/Unlock3/Button.disabled = true
+	$Elements/Rerolls/Button.disabled = true
 
 
 # ====================== Event Handlers ============================
 
 
-# triggers when the Mod1 button is pressed
-func _on_mod_1_button_down():
-	select_mod(mod_1)
+# Triggers when the Enable buttons timer expires
+func _on_enable_buttons_timeout():
+	# the timer exists so that the player can't click the buttons the moment the gui appears and the game pauses
+	# this prevents them accidently clicking something before the realize the gui has appeared
+
+	# re-enable all the buttons on the interface so that the player can click on them again
+	$Elements/LevelUnlocks/Unlock1/Button.disabled = false
+	$Elements/LevelUnlocks/Unlock2/Button.disabled = false
+	$Elements/LevelUnlocks/Unlock3/Button.disabled = false
+	$Elements/Rerolls/Button.disabled = false
 
 
-# triggers when the Mod2 button is pressed
-func _on_mod_2_button_down():
-	select_mod(mod_2)
+# Triggers when the button for unlock 1 is pressed
+func _on_unlock_1_button_down():
+	select_unlock(unlock_1)
 
 
-# triggers when the Mod3 button is pressed
-func _on_mod_3_button_down():
-	select_mod(mod_3)
+# Triggers when the button for unlock 2 is pressed
+func _on_unlock_2_button_down():
+	select_unlock(unlock_2)
+
+
+# Triggers when the button for unlock 3 is pressed
+func _on_unlock_3_button_down():
+	select_unlock(unlock_3)
 
 
 # Triggers when the Reroll Options button is pressed
 func _on_button_button_down():
 	pass # Replace with function body.
+
 
 
 
