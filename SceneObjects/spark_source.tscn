@@ -28,8 +28,17 @@ point_count = 5
 top_level = true
 collision_mask = 3
 script = ExtResource("1_2dvxp")
+base_health = 10.0
+base_speed = 150.0
+base_defense = 1.0
+base_spark_gen_rate = 1.0
+base_spark_cap = 10
+base_xp_mult = 1.0
+base_pickup_range = 75.0
+base_idle_orbit = 50.0
+base_defense_orbit = 150.0
 spark_type = ExtResource("2_ch1h8")
-active_ability_ct = 0.01
+base_active_ability_ct = 0.5
 xp_needed_per_level = 10.0
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
@@ -40,7 +49,6 @@ shape = SubResource("CircleShape2D_1ey6o")
 debug_color = Color(0.819608, 0.266667, 0.290196, 0.419608)
 
 [node name="SparkSpawnCountDown" type="Timer" parent="."]
-autostart = true
 
 [node name="ActiveAbilityCooldown" type="Timer" parent="."]
 one_shot = true
@@ -91,8 +99,8 @@ rotation = 0.00232828
 zoom = Vector2(0.75, 0.75)
 
 [connection signal="body_entered" from="." to="." method="_on_body_entered"]
-[connection signal="redraw_orbits" from="." to="IdleOrbit" method="_on_spark_source_redraw_orbits"]
-[connection signal="redraw_orbits" from="." to="DefenseOrbit" method="_on_spark_source_redraw_orbits"]
+[connection signal="redraw_defense_orbit" from="." to="DefenseOrbit" method="_on_spark_source_redraw_orbits"]
+[connection signal="redraw_idle_orbit" from="." to="IdleOrbit" method="_on_spark_source_redraw_orbits"]
 [connection signal="timeout" from="SparkSpawnCountDown" to="." method="_on_spark_spawn_count_down_timeout"]
 [connection signal="timeout" from="ActiveAbilityCooldown" to="." method="_on_active_ability_cooldown_timeout"]
 [connection signal="area_entered" from="PickupMagnetRange" to="." method="_on_pickup_magnet_range_area_entered"]

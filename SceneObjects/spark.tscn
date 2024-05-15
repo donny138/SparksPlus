@@ -8,6 +8,9 @@ scale = Vector2(1, 1.00489)
 collision_layer = 4
 collision_mask = 2
 script = ExtResource("1_s2jq7")
+base_damage = 5.0
+base_speed = 250.0
+base_durability = 1
 metadata/_edit_group_ = true
 
 [node name="Sprite2D" type="Sprite2D" parent="."]

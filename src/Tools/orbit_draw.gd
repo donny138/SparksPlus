@@ -21,10 +21,10 @@ func _ready() -> void:
 	draw_curve(INIT_SIZE)
 
 
-# This funciton catches and handles the "redraw_orbits" signal from the spark source
-func _on_spark_source_redraw_orbits(orbit_radius_mult):
-	"""This function redraws the orbit with some multiplier applied to the original orbit"""
-	draw_curve(INIT_SIZE * orbit_radius_mult)
+# This funciton catches and handles a signal to redraw the orbit from the spark size
+func _on_spark_source_redraw_orbits(orbit_radius):
+	"""This function redraws the orbit to some new size"""
+	draw_curve(orbit_radius)
 
 
 # function to draw the curve

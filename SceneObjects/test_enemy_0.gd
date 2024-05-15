@@ -23,56 +23,64 @@ extends RigidBody2D
 
 
 # Configurable attributes of this enemy
-@export var health = 10		# this is the amount of health this enemy has
-@export var speed = 100		# this is how fast the enemy will move
-@export var damage = 5		# this is how much damage the enemy will do if it hits the player
-@export var enemy_name : String # this is the name of this kind of enemy
-@export var rot_rate = TAU/4 # this is how fast the enemy rotates
-@export var rot_dir = 0		# this affects the direction of rotation
-@export var attack_ct = 0.5 # this is the attack cooldown time for this enemy
+@export var base_health = 10		# this is the amount of health this enemy has
+@export var base_speed = 100		# this is how fast the enemy will move
+@export var base_damage = 5			# this is how much damage the enemy will do if it hits the player
+@export var base_attack_ct = 0.5 	# this is the attack cooldown time for this enemy
+@export var enemy_name : String 	# this is the name of this kind of enemy
 
 # temp configurable attributes
 @export var xp_orb : PackedScene
 @export var xp_orb_count_min : int
 @export var xp_orb_count_max : int
 
+# internal game attributes
+var max_health						# tracks the maximum amount of health this enemy can have
+var cur_health						# tracks the current amount of health this enemy has
+var cur_speed						# the current speed (pixels / second) this enemy moves at
+var cur_damage						# the current damage the enemy deals on hit
+var cur_attack_ct					# the current cooldown between enemy attacks
+
+# local modifiers and abilities
+var mods = {}						# tracks the dict of modifiers that apply to this enemy object
+var abilities = []					# tracks the list of abilities that apply to this enemy object
+
 # internal attributes of this enemy
-var cur_health				# tracks the current amount of health this enemy has
-var max_health				# tracks the maximum amount of health this enemy can have
-var cur_speed				# the current speed (pixels / second) this enemy moves at
-var cur_damage				# the current damage the enemy deals on hit
-var active_debufs = []		# a list of debuffs currently affecting the enemy (damage over time, slow, etc)
-var spark_source 			# this is a pointer to the spark source object (the player)
-var is_attack_available = true # this controls whether or not this enemy can hit the player
-var is_alive : bool			# tracks if the enemy is alive
+var rot_rate = TAU/4 				# this is how fast the enemy rotates
+var rot_dir = 0						# this affects the direction of rotation
+var active_debufs = []				# a list of debuffs currently affecting the enemy (damage over time, slow, etc)
+var spark_source 					# this is a pointer to the spark source object (the player)
+var level_scene						# this is a pointer to the level scene object that runs the game
+var is_attack_available = true 		# this controls whether or not this enemy can hit the player
+var is_alive : bool					# tracks if the enemy is alive
 
 # variable to track if time passes for this object or not
 var is_paused
 
 
-# other attributes of the enemy
-var mod_list = []  			# this is a list of modifiers relevant to this enemy
-
-
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	#TODO:  Initialize attribute manager with base values for this enemy
-	# 		- Pass initial modifiers to the attribute manager
+	# save pointer to the level scene object
+	level_scene = get_parent()
+
+	# initialze the current and max health of the enemy
+	max_health = base_health
+	cur_health = max_health
+
+	# update attributes based on modifiers and base stats
+	update_attributes()
 
 	# make sure collision is enabled
 	$CollisionShape2D.disabled = false
 
 	# initialize the attack cooldown time to the starting value
-	$AttackCooldown.wait_time = attack_ct
+	cur_attack_ct = base_attack_ct
+	$AttackCooldown.wait_time = cur_attack_ct
 
 	# choose a random direction that this enemy will rotate in
 	while rot_dir == 0:
 		rot_dir = randi_range(-1, 1)
 	
-	# temporary code that should be configured elsewhere
-	max_health = health
-	cur_health = max_health
-	cur_speed = speed
 	# the enemy starts out alive
 	is_alive = true
 	# connect to the time control signal
@@ -111,7 +119,7 @@ func got_hit(spark):
 		# handle being hit by the spark
 		was_hit = true
 		# take damage based on the damage that the given spark object will deal
-		cur_health = cur_health - spark.damage
+		cur_health = cur_health - spark.cur_damage
 		# if hp has run out, then the enemy dies
 		if cur_health <= 0:
 			on_death()
@@ -131,7 +139,7 @@ func hit_spark_source():
 		# flag this enemies attack to be unuseable
 		is_attack_available = false
 		# start the attack cooldown timer (will re-enable the attack after a duration)
-		$AttackCooldown.wait_time = attack_ct
+		$AttackCooldown.wait_time = cur_attack_ct
 		$AttackCooldown.start()
 
 
@@ -172,7 +180,7 @@ func _on_body_entered(body):
 			# flag this enemies attack to be unuseable
 			is_attack_available = false
 			# start the attack cooldown timer (will re-enable the attack after a duration)
-			$AttackCooldown.wait_time = attack_ct
+			$AttackCooldown.wait_time = cur_attack_ct
 			$AttackCooldown.start()
 
 
@@ -196,22 +204,57 @@ func handle_control_time(freeze_time):
 
 
 
-# ========== functions that should be moved to the common internal generic enemy attribute manager class ================
+# =================== Functions to handle modifier related stuffs =============================
 
 
-# This function adds a list of modifiers to this enemy
-func add_mod_list():
-	pass
+# function to update all of the spark sources current attributes based on it's base value and it's list of modifiers
+func update_attributes():
+	# this function assumes that all lists of modifers are up to date
 
+	# combine the global and local list of modifiers that should apply to this enemy
+	var all_mods = {}
+	# get all the mods from the global list of modifiers
+	for mod_list : Array in level_scene.enemy_mods.values():
+		for mod : Mod in mod_list:
+			var attribute = mod.mod_attribute
+			# get the list of modifers that affect this attribute
+			var array = all_mods.get(attribute, [])
+			array.append(mod)
+			# if this is a new list, add it to the dictionary
+			if array.size() == 1:
+				all_mods[attribute] = array
+	# get all the mods from the local list of modifiers
+	for mod_list : Array in mods.values():
+		for mod : Mod in mod_list:
+			var attribute = mod.mod_attribute
+			# get the list of modifers that affect this attribute
+			var array = all_mods.get(attribute, [])
+			array.append(mod)
+			# if this is a new list, add it to the dictionary
+			if array.size() == 1:
+				all_mods[attribute] = array
+	
+	# Get the modifiers that should apply to each attribute and apply them to the enemies current attribute
 
-# This funciton adds a single modifier to this enemy
-func add_single_mod():
-	pass
+	# Modify Health
+	var health_mods = all_mods.get(Consts.ModAttribute_e.health, [])
+	var health_ratio = cur_health / max_health
+	max_health = Consts.calc_mods(health_mods, base_health)
+	# the current health should (percentage wise) be the same as before the mod was applied
+	cur_health = max_health * health_ratio
 
+	# Modify Speed
+	var speed_mods = all_mods.get(Consts.ModAttribute_e.speed, [])
+	cur_speed = Consts.calc_mods(speed_mods, base_speed)
 
-# This function updates the stats of the enemy to apply all active modifiers.  This should be called whenever a modifier is added or removed
-func update_cur_stas():
-	pass
+	# Modify Damage
+	var damage_mods = all_mods.get(Consts.ModAttribute_e.damage, [])
+	cur_damage = Consts.calc_mods(damage_mods, base_damage)
+
+	# Modify Attack Cooldown
+	var attack_ct_mods = all_mods.get(Consts.ModAttribute_e.active_abil_ct, [])
+	cur_attack_ct = Consts.calc_mods(attack_ct_mods, base_attack_ct) # gets set when the enemy hits an attack, don't need to set timer value here
+
 
 
 

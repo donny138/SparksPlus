@@ -24,6 +24,10 @@ autostart = true
 [node name="LevelTimer" type="Timer" parent="."]
 autostart = true
 
+[node name="UnpauseDelayTimer" type="Timer" parent="."]
+wait_time = 0.25
+one_shot = true
+
 [node name="Testing cube" type="Polygon2D" parent="."]
 color = Color(1, 0.227451, 1, 1)
 polygon = PackedVector2Array(-256, -169, -256, -10, -117, -13, -124, -180)
@@ -33,6 +37,7 @@ metadata/_edit_lock_ = true
 [node name="GuiLayer" type="CanvasLayer" parent="."]
 
 [node name="LevelHud" parent="GuiLayer" instance=ExtResource("4_djltt")]
+visible = false
 metadata/_edit_lock_ = true
 
 [node name="LevelUpGui" parent="GuiLayer" instance=ExtResource("5_6e2ol")]
@@ -41,3 +46,4 @@ metadata/_edit_lock_ = true
 
 [connection signal="timeout" from="EnemySpawnCountDown" to="." method="_on_enemy_spawn_count_down_timeout"]
 [connection signal="timeout" from="LevelTimer" to="." method="_on_level_timer_timeout"]
+[connection signal="timeout" from="UnpauseDelayTimer" to="." method="_on_unpause_delay_timer_timeout"]
