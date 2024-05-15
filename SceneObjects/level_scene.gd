@@ -29,12 +29,17 @@ var spark_source 			# pointer to the active spark source (the player)
 var level_hud 				# pointer to the level hud
 var level_up_gui			# pointer to the leve up gui
 var active_enemies = []		# a list of enemy objects that are currently active
+var active_sparks = []		# a list of spark objects that exist within the game
 var active_level_unlockables = [] # a list of level unlockables that the player has activated and how many many times they have been chosen
 
 # modifiers and ability attributes
-var level_mods = []
-var enemy_mods = []
-var level_abilities = []
+var level_mods = {}			# a dict of modifiers that apply to the level scene object
+var source_mods = {}		# a dict of modifiers that apply to the spark source object
+var spark_mods = {}			# a dict of modifiers that apply to EVERY spark object
+var enemy_mods = {}			# a dict of modifiers that apply to EVERY enemy object
+var level_abilities = []	
+var source_abilities = []
+var spark_abilities = []
 var enemy_abilities = []
 
 # time related vars
@@ -144,6 +149,23 @@ func remove_active_enemy(enemy):
 		print("ERROR!  Enemy not found!")
 
 
+# function to remove an active spark
+func remove_active_spark(spark):
+	# find the spark in the list of active sparks
+	var index = -1
+	for i in range(active_sparks.size()):
+		if active_sparks[i] == spark:
+			index = i
+			break
+	# if the spark was found, remove it from the list
+	if index != -1:
+		active_sparks.pop_at(index)
+	# if the spark was not found, print an error and do nothing
+	else:
+		print("ERROR!  Spark not found!")
+	pass
+
+
 # function to handle controlling time.  This should be connected to the "control time signal" within the level
 func handle_control_time(freeze_time):
 	# freeze time or resume time depending on the given input
@@ -200,36 +222,102 @@ func finish_level_up_event(chosen_unlock : LevelUnlockable):
 		active_level_unlockables.append(entry)
 		print(chosen_unlock.name, " Has been unlocked for the first time!")
 
-	# Add Modifiers from the chosen unlock to the spark source
-	var new_mods = Consts.filter_mods_by_target(chosen_unlock.mods, Consts.ModTarget_e.spark_source)
-	for mod : Mod in new_mods:
-		spark_source.spark_source_mods.append(mod)
+	# add new modifiers from the level unlock object to the game
+	add_new_mods(chosen_unlock.mods)
 	
-	# Add Modifiers from the chosen unlock to the spark mod list on the spark source
-	new_mods = Consts.filter_mods_by_target(chosen_unlock.mods, Consts.ModTarget_e.spark)
-	for mod : Mod in new_mods:
-		spark_source.spark_mods.append(mod)
-	
-	# Add Modifiers from the chosen unlock to the level 
-	new_mods = Consts.filter_mods_by_target(chosen_unlock.mods, Consts.ModTarget_e.level)
-	for mod : Mod in new_mods:
-		level_mods.append(mod)
-	
-	# Add Modifiers from the chosen unlock to the enemy mod list within the level
-	new_mods = Consts.filter_mods_by_target(chosen_unlock.mods, Consts.ModTarget_e.enemy)
-	for mod : Mod in new_mods:
-		enemy_mods.append(mod)
+	# Add any new Abilities to the relevant game objects
+	# TODO: Update this implementation once abilities are implemented
+	add_new_abilities(chosen_unlock.abilities)
 
-	# tell the spark source to update it's current attributes to make sure that they account for the new modifiers
-	spark_source.update_attributes()
-
-	# TODO: Add Abilities to arrays in the level and on the spark source
-
-	
 	# resume time
 	
 	# start the unpause delay timer so that there is a small delay after the gui goes away before time resumes
 	$UnpauseDelayTimer.start()
+
+
+# ================= Functions that handle modifiers =======================
+
+
+# function to update the mod lists for every object type with new mods and update the attributes of objects as needed
+func add_new_mods(mod_list : Array):
+	# variables to track if different entities have had their mods updated or not
+	var source_updated = false
+	var spark_updated = false
+	var level_updated = false
+	var enemy_updated = false
+
+	# Add Modifiers from the chosen unlock to the spark source
+	var new_mods = Consts.filter_mods_by_target(mod_list, Consts.ModTarget_e.spark_source)
+	if new_mods.size() > 0:
+		add_mods_to_dict(source_mods, new_mods)
+		# flag the source as needing an update
+		source_updated = true
+	
+	# Add Modifiers from the chosen unlock to the spark mod list on the spark source
+	new_mods = Consts.filter_mods_by_target(mod_list, Consts.ModTarget_e.spark)
+	if new_mods.size() > 0:
+		add_mods_to_dict(spark_mods, new_mods)
+		# flag the sparks as needing an update
+		spark_updated = true
+	
+	# Add Modifiers from the chosen unlock to the level 
+	new_mods = Consts.filter_mods_by_target(mod_list, Consts.ModTarget_e.level)
+	if new_mods.size() > 0:
+		add_mods_to_dict(level_mods, new_mods)
+		# flag the level as needing an update
+		level_updated = true
+	
+	# Add Modifiers from the chosen unlock to the enemy mod list within the level
+	new_mods = Consts.filter_mods_by_target(mod_list, Consts.ModTarget_e.enemy)
+	if new_mods.size() > 0:
+		add_mods_to_dict(enemy_mods, new_mods)
+		# flag the enemies as needing an update
+		enemy_updated = true
+
+	# Tell any objects that have had their mod lists updated to re-calculate their attributes
+	if source_updated:
+		# tell the spark source to update it's current attributes to make sure that they account for the new modifiers
+		spark_source.update_attributes()
+	if spark_updated:
+		# update all the active sparks with their new modifiers
+		for spark in active_sparks:
+			spark.update_attributes()
+	if enemy_updated:
+		# update all active enemy objects with their new attributes
+		# TODO: Implement this once enemies have an update attribute function
+		pass
+	if level_updated:
+		# update modifiers that affect the level
+		# TODO: implement once there are any modifiers that actual do this
+		pass
+
+
+# function to add a list of modifiers to a dictionary
+func add_mods_to_dict(mod_dict : Dictionary, mod_list : Array):
+	for mod : Mod in mod_list:
+		# Add each mod to the dictionary using it's name as the key
+		var array = mod_dict.get(mod.name, [])
+		# if there is already an array of these mods, check to see if the mod is repeatable or not
+		if array.size() > 0:
+			if mod.repeatable:
+				# add another instance of this mod to the dictionary	
+				array.append(mod)
+			else:
+				# cannot add the modifier since one already exists and it is not repeatable
+				# debug log to log the attempt
+				print("WARNING: attempted to add unrepeatable modifier: ", mod.name)
+				# this shouldn't happen, debug log will alert you to it happening if level unlockables are not configured right
+		else:
+			# if an array for this modifiers name didn't already exist, then just add it to the dictionary
+			array.append(mod)
+			mod_dict[mod.name] = array
+	
+
+
+# function to add a new abilities array and apply the new abilities to each object in the game
+func add_new_abilities(_ability_list : Array):
+	# TODO: Implement this function once abilities are implemented
+	pass
 
 
 

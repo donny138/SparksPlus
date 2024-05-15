@@ -27,20 +27,21 @@ var cur_speed : float
 var cur_durability : int
 
 # Pointers and misc internal variables
-var spark_source
-var orbit_point
-var has_been_fired = false
-var fixed_velocity_vector : Vector2
-var cur_orbit_rate : float
-var rotation_speed : float
+var level_scene 						# pointer to the level scene object that runs the game
+var spark_source						# pointer to the spark source that created this spark
+var orbit_point							# the point (in radians) on the sparks orbit that the spark should try to get to
+var has_been_fired = false				# a flag to track if the spark is attached to the spark source or not
+var fixed_velocity_vector : Vector2		# a velocity vector to follow once the spark is not following an orbit
+var cur_orbit_rate : float				# the value that the orbit_point changes per second
+var rotation_speed : float				# the speed the spark rotates 
 
 # time related attributes
-var is_paused = false
-var fired_life_time
+var is_paused = false					# tracks if time applies to this object or if it does not
+var fired_life_time						# time that the spark lasts after being fired before expiring
 
 # modifiers and abilities
-var mods = []
-var abilities = []
+var mods = {}							# a dict of modifiers that apply specifically to this spark
+var abilities = []						# a list of abilities that apply specifically to this spark
 
 
 
@@ -48,6 +49,8 @@ var abilities = []
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	# link the spark to the level scene object that it exists within
+	level_scene = get_parent()
 	# use the values that will be set by a caller to initialize the logical spark
 	spark = BaseSpark.new(base_damage, base_speed, [])
 	# calculate a base orbit rate based on the base speed and idle orbit size
@@ -150,13 +153,21 @@ func fire_spark(angle : Vector2):
 func handle_spark_break():
 	#TODO:  add a fun animation that plays when the spark breaks and maybe some cool partical effects
 
-	# if the spark has not been fired, remove it from the list of active sparks within the spark source
+	# remove the spark from the game
+	remove_self()
+	
+
+# function to handle removing this spark
+func remove_self():
+	# if the spark has not been fired, remove it from the list of sparks in orbit around the spark source
 	if has_been_fired == false:
 		spark_source.remove_spark(self)
+	
+	# remove the spark from the level scene
+	level_scene.remove_active_spark(self)
 
 	# remove the spark object from the game
 	queue_free()
-	
 
 
 
@@ -168,20 +179,43 @@ func update_attributes():
 	# this function assumes the "mods" array contains the right modifiers to apply to the spark
 	# TODO:  change particle effects or colors here based on mods?
 
-	# increment through each of the modifiable attributes and apply them accordingly
+	# combine the global list of spark modifiers from the level scene object with the list of local modifiers
+	# doing this in a dictionary to make finding the lists of mods affecting each attribute easier
+	var all_mods = {}
+	# get all the global modifiers from the level scene
+	for mod_list : Array in level_scene.spark_mods.values():
+		for mod : Mod in mod_list:
+			var attribute = mod.mod_attribute
+			# get the list of modifers that affect this attribute
+			var array = all_mods.get(attribute, [])
+			array.append(mod)
+			# if this is a new list, add it to the dictionary
+			if array.size() == 1:
+				all_mods[attribute] = array
+	# get all the unique modifiers from this object
+	for mod_list : Array in mods.values():
+		for mod : Mod in mod_list:
+			var attribute = mod.mod_attribute
+			# get the list of modifers that affect this attribute
+			var array = all_mods.get(attribute, [])
+			array.append(mod)
+			# if this is a new list, add it to the dictionary
+			if array.size() == 1:
+				all_mods[attribute] = array
+
+	# get the array of modifers for each attribute and use them to update each calculation
 
 	# Damage attribute calculation
-	var damage_mods = Consts.filter_mods_by_attribute(mods, Consts.ModAttribute_e.damage)
+	var damage_mods = all_mods.get(Consts.ModAttribute_e.damage, [])
 	cur_damage = Consts.calc_mods(damage_mods, base_damage)
 
 	# Speed attribute calculation
-	var speed_mods = Consts.filter_mods_by_attribute(mods, Consts.ModAttribute_e.speed)
+	var speed_mods = all_mods.get(Consts.ModAttribute_e.speed, [])
 	cur_speed = Consts.calc_mods(speed_mods, base_speed)
 	cur_orbit_rate = TAU / (((TAU * spark_source.cur_defense_orbit) / cur_speed) * 1.3)
 	
-
 	# Durability attribute calculation
-	var durability_mods = Consts.filter_mods_by_attribute(mods, Consts.ModAttribute_e.durability)
+	var durability_mods = all_mods.get(Consts.ModAttribute_e.durability, [])
 	cur_durability = int(Consts.calc_mods(durability_mods, float(base_durability)))
 
 
@@ -193,7 +227,7 @@ func update_attributes():
 # This function gets called when the sparks lifetime timer expires
 func _on_life_time_timeout():
 	# remove this object from the game
-	queue_free()
+	remove_self()
 
 
 # This function gets called when the spark enters another body

@@ -23,8 +23,8 @@ func _init():
 
     # create and store a modifier to increase the speed of spark production by 30%
     var spark_prod = Mod.new()
-    spark_prod.name = "Overclocked Spark Systems"
-    spark_prod.repeatable = true
+    spark_prod.name = "Overclocked Spark Systems: production"
+    spark_prod.repeatable = false
     spark_prod.mod_target = Consts.ModTarget_e.spark_source
     spark_prod.mod_attribute = Consts.ModAttribute_e.spark_gen
     spark_prod.mod_type = Consts.ModType_e.multiplier
@@ -33,8 +33,8 @@ func _init():
 
     # create and store a modifier to decrease the active ability cooldown time
     var active_abil = Mod.new()
-    active_abil.name = "Overclocked Spark Systems"
-    active_abil.repeatable = true
+    active_abil.name = "Overclocked Spark Systems: cooldown"
+    active_abil.repeatable = false
     active_abil.mod_target = Consts.ModTarget_e.spark_source
     active_abil.mod_attribute = Consts.ModAttribute_e.active_abil_ct
     active_abil.mod_type = Consts.ModType_e.multiplier

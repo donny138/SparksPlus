@@ -23,7 +23,7 @@ func _init():
 
     # create and store a modifier to increase the movement speed of sparks by 50%
     var spark_spd = Mod.new()
-    spark_spd.name = "Rocket-Like Sparks"
+    spark_spd.name = "Rocket-Like Sparks: speed"
     spark_spd.repeatable = true
     spark_spd.mod_target = Consts.ModTarget_e.spark
     spark_spd.mod_attribute = Consts.ModAttribute_e.speed
@@ -33,7 +33,7 @@ func _init():
 
     # create and store a modifier to add a flat +5 extra damage to sparks
     var spark_dmg = Mod.new()
-    spark_dmg.name = "Rocket-Like Sparks"
+    spark_dmg.name = "Rocket-Like Sparks: damage"
     spark_dmg.repeatable = true
     spark_dmg.mod_target = Consts.ModTarget_e.spark
     spark_dmg.mod_attribute = Consts.ModAttribute_e.damage

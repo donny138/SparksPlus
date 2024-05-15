@@ -23,7 +23,7 @@ func _init():
 
     # create and store a modifier to increase pickup range by 50%
     var range_up = Mod.new()
-    range_up.name = "PickUp-RangeUp"
+    range_up.name = "PickUp-RangeUp: Range"
     range_up.repeatable = true
     range_up.mod_target = Consts.ModTarget_e.spark_source
     range_up.mod_attribute = Consts.ModAttribute_e.pickup_range

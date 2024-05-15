@@ -41,15 +41,14 @@ var cur_defense_orbit : float			# current radius of the defensive spark orbit
 var cur_active_ability_ct : float		# current time (seconds) (after mods) between uses of the active ability
 
 # modifier and ability attributes
-var spark_source_mods : Array			# array of modifiers the spark source posses that target itself
-var spark_mods : Array					# array of modifiers that should be applied to sparks when they're generated
-var spark_source_abilities : Array 		# array of abilities that should be applied to the spark source
-var spark_abilities : Array 			# array of abilities that should be applied to sparks when they're generated
+var mods : Dictionary					# array of modifiers that apply to this spark source that aren't included in the global list
+var abilities : Array 					# array of abilities that apply to this spark source that aren't included in the global list
 
 # logic and game objects
+var level_scene							# pointer to the level scene object that manages the level
 var level_hud							# pointer to the level HUD the player will see on screen
 var rotation_speed						# tracks rotation speed in rads/sec
-var sparks = []							# list of active sparks in orbit
+var sparks = []							# list of active sparks currently in orbit around this spark source
 var orbit_mult = 1.0					# multiplier to apply to orbit radius
 var is_active_ability_ready = true		# allows use of active ability when true
 var is_paused = false					# tracks if time should pass for this object
@@ -63,6 +62,8 @@ var next_level_xp_amount : float 		# the amoutn of xp we need for the next level
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
+	# link the spark source to the level scene it exists within
+	level_scene = get_parent()
 	# initialize health values to their starting amount
 	max_health = base_health
 	cur_health = max_health
@@ -191,7 +192,7 @@ func remove_spark(spark):
 # function to handle being hit by an enemy
 func hit_by_enemy(enemy):
 	# take damage based on the enemies attack damage
-	cur_health = cur_health - enemy.damage
+	cur_health = cur_health - enemy.cur_damage
 	# update the hud to reflect the current health status
 	# TODO: Update this once stats are moved back into this class
 	level_hud.update_health(cur_health, max_health)
@@ -227,48 +228,72 @@ func level_up():
 func update_attributes():
 	# this function assumes that spark_source_mods is up to date and contains all the mods that it should
 
-	# TODO:  Optimize the mod search, current alg is iterating through the list of modifiers once FOR EACH moddable attribute, only needs to do it once
+	# combine the global list of modifiers from the level scene with local modifiers on this spark source object
+	# doing this with a dictionary allows the source to not need to iterate through the list a bunch of times later
+	# (local list can contain temporary modifiers too)
+	var all_mods = {}
+	# get modifers from the level scene
+	for mod_list : Array in level_scene.source_mods.values():
+		for mod : Mod in mod_list:
+			var attribute = mod.mod_attribute
+			# get the list of modifers that affect this attribute
+			var array = all_mods.get(attribute, [])
+			array.append(mod)
+			# if this is a new list, add it to the dictionary
+			if array.size() == 1:
+				all_mods[attribute] = array
+	# get local modifiers
+	for mod_list : Array in mods.values():
+		for mod : Mod in mod_list:
+			var attribute = mod.mod_attribute
+			# get the list of modifers that affect this attribute
+			var array = all_mods.get(attribute, [])
+			array.append(mod)
+			# if this is a new list, add it to the dictionary
+			if array.size() == 1:
+				all_mods[attribute] = array
+
 	# isloate the modifiers that apply to each attribute and apply them to the current value on the spark source
 
 	# Modify Health
-	var health_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.health)
+	var health_mods = all_mods.get(Consts.ModAttribute_e.health, [])
 	var health_ratio = cur_health / max_health
 	max_health = Consts.calc_mods(health_mods, base_health)
 	# the current health should (percentage wise) be the same as before the mod was applied
 	cur_health = max_health * health_ratio
 
 	# Modify Speed
-	var speed_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.speed)
+	var speed_mods = all_mods.get(Consts.ModAttribute_e.speed, [])
 	cur_speed = Consts.calc_mods(speed_mods, base_speed)
 
 	# Modify Defense
-	var defense_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.defense)
+	var defense_mods = all_mods.get(Consts.ModAttribute_e.defense, [])
 	cur_defense = Consts.calc_mods(defense_mods, base_defense)
 
 	# Modify Spark Gen Rate
-	var spark_gen_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.spark_gen)
+	var spark_gen_mods = all_mods.get(Consts.ModAttribute_e.spark_gen, [])
 	cur_spark_gen_rate = Consts.calc_mods(spark_gen_mods, base_spark_gen_rate)
 
 	# Modify Spark Cap
-	var spark_cap_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.spark_cap)
+	var spark_cap_mods = all_mods.get(Consts.ModAttribute_e.spark_cap, [])
 	cur_spark_cap = int(Consts.calc_mods(spark_cap_mods, float(base_spark_cap)))
 
 	# Modify xp multiplier
-	var xp_mult_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.xp_mult)
+	var xp_mult_mods = all_mods.get(Consts.ModAttribute_e.xp_mult, [])
 	cur_xp_mult = Consts.calc_mods(xp_mult_mods, base_xp_mult)
 
 	# Modify the active ability cooldown time
-	var active_ability_ct_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.active_abil_ct)
+	var active_ability_ct_mods = all_mods.get(Consts.ModAttribute_e.active_abil_ct, [])
 	cur_active_ability_ct = Consts.calc_mods(active_ability_ct_mods, base_active_ability_ct)
 
 	# Modify the current pickup range 
-	var pickup_range_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.pickup_range)
+	var pickup_range_mods = all_mods.get(Consts.ModAttribute_e.pickup_range, [])
 	cur_pickup_range = Consts.calc_mods(pickup_range_mods, base_pickup_range)
 	# apply the pickup range to the pickup magnet range object
 	$PickupMagnetRange/CollisionShape2D.shape.radius = cur_pickup_range
 
 	# Modify the orbits the sparks take
-	var orbit_range_mods = Consts.filter_mods_by_attribute(spark_source_mods, Consts.ModAttribute_e.orbit_range)
+	var orbit_range_mods = all_mods.get(Consts.ModAttribute_e.orbit_range, [])
 	cur_idle_orbit = Consts.calc_mods(orbit_range_mods, base_idle_orbit)
 	cur_defense_orbit = Consts.calc_mods(orbit_range_mods, base_defense_orbit)
 	# redraw the orbits
@@ -306,10 +331,12 @@ func _on_spark_spawn_count_down_timeout():
 		# set the stats of the spark accordingly
 		new_spark.spark_source = self
 		new_spark.position = position
-		new_spark.mods = spark_mods
 
-		# add the spark to the list so we can track it
+		# add the spark as a child of the level scene
 		get_parent().add_child(new_spark)
+		# add the spark to the list of sparks in the level scene
+		level_scene.active_sparks.append(new_spark)
+		# add the spark to the list of sparks in orbit around this spark source
 		sparks.append(new_spark)
 
 		# alter the orbit percentage of each spark so they orbit evenly
@@ -337,6 +364,7 @@ func _on_body_entered(body):
 
 	# trigger hit function on the enemy
 	# this way any unique behavior for a unique enemy can occur
+	print("SPARK SOURCE DETECTED ENEMY HIT")
 	body.hit_spark_source()
 
 	pass # Replace with function body.
