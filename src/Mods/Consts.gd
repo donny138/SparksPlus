@@ -52,6 +52,16 @@ enum ModType_e{
 }
 
 
+# Defines families of unlockables.  This affects which unlockables are available during gameplay
+enum UnlockFamily_e{
+    no_family,          # 'family' an unlockable can belong to when it does not have a family
+    spark_production,   # family of unlockables related to producing new sparks
+    battle_tactics,     # family of unlockables involving active and defensive abilities
+    spark_tempering,    # family of unlockables which can apply fire or ice debuffs
+    spark_treatment     # family of unlockables which can apply viruses or affect spark stability
+}
+
+
 # Defines all of the potential damage types that can be applied
 # TODO: Implement this later, once some unlockables require this
 enum DmgType_e{

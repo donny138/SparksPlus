@@ -12,7 +12,10 @@ func _init():
 
     # define values specific to this class
     name = "Rocket-Like Sparks"
-    desc = "Sparks can fly 50% faster and do +5 additional damage when they collide with enemies"
+    desc = "Sparks fly 50% faster and do +5 additional damage when they collide with enemies"
+    family = Consts.UnlockFamily_e.spark_production
+    branch = 1
+    branch_name = "Quality"
     repeatable = false
     pre_reqs = []
     next_unlocks = []

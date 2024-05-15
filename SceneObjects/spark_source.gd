@@ -261,6 +261,7 @@ func update_attributes():
 	max_health = Consts.calc_mods(health_mods, base_health)
 	# the current health should (percentage wise) be the same as before the mod was applied
 	cur_health = max_health * health_ratio
+	level_hud.update_health(cur_health, max_health)
 
 	# Modify Speed
 	var speed_mods = all_mods.get(Consts.ModAttribute_e.speed, [])

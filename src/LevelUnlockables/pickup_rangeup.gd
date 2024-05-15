@@ -13,6 +13,9 @@ func _init():
     # define values specific to this class
     name = "PickUp-RangeUp"
     desc = "Increases the range that xp and other pickupables can be collected by 50%"
+    family = Consts.UnlockFamily_e.no_family
+    branch = 0
+    branch_name = "Base"
     repeatable = true
     pre_reqs = []
     next_unlocks = []

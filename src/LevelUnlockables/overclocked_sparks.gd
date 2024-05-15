@@ -13,9 +13,12 @@ func _init():
     # define values specific to this class
     name = "Overclocked Spark Systems"
     desc = "Increases spark production speed by 30% and decreases the active ability cooldown by 50%"
+    family = Consts.UnlockFamily_e.spark_production
+    branch = 0
+    branch_name = "Quantity"
     repeatable = false
     pre_reqs = []
-    next_unlocks = []
+    next_unlocks = [SwarmingSparks, RapidFire]
     
     # initialize arrays of mods and abilities
     mods = []

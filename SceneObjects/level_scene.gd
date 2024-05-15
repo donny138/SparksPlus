@@ -30,7 +30,7 @@ var level_hud 				# pointer to the level hud
 var level_up_gui			# pointer to the leve up gui
 var active_enemies = []		# a list of enemy objects that are currently active
 var active_sparks = []		# a list of spark objects that exist within the game
-var active_level_unlockables = [] # a list of level unlockables that the player has activated and how many many times they have been chosen
+
 
 # modifiers and ability attributes
 var level_mods = {}			# a dict of modifiers that apply to the level scene object
@@ -41,6 +41,11 @@ var level_abilities = []
 var source_abilities = []
 var spark_abilities = []
 var enemy_abilities = []
+
+# Level Unlockable related variables
+var valid_unlockables = {}	# a dict of level unlockables that are valid to be chosen
+var potential_unlockables = []# the level unlockables that could possibly appear in the game
+var active_unlockables = {}	# a dict of level unlockables that the player has activated storing the number of times they have been chosen
 
 # time related vars
 var time_passed_sec 		# tracks the number of seconds that have passed since the level started
@@ -79,6 +84,22 @@ func _ready():
 	# initialize time things
 	time_passed_sec = 0		# the level is just starting, no time has passed
 	level_hud.update_time(time_passed_sec)
+
+	# TODO: Move this behavior to exist outside of the level and passed into the level once initialized
+	# do this when a main Menu / parent level exists that encompasses the level object
+	# (set all the level unlockables that are allowed to appear in the game)
+	potential_unlockables = [
+		OverclockedSparks,
+		SwarmingSparks,
+		RapidFire,
+		RepeatedHits,
+		PickUpRangeUp,
+		RocketSparks,
+		SourceHealth,
+		SourceSpeed,
+	]
+	# Generate the initial list of valid unlockables
+	valid_unlockables = get_initial_valid_unlockables()
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -186,15 +207,26 @@ func trigger_level_up_gui():
 	# TODO: add a cool visual effect / sound trigger here at some point
 	# put a blur effect onto everything normally in the game (hud too, but not level up gui)
 
-	# TODO: implement random level unlockable selection once modifiers exist
 	# randomly pick 3 available level unlockables (TODO make random)
-	var fake_mod_list = [
-		temp_valid_unlockables[0].new(),
-		temp_valid_unlockables[1].new(),
-		temp_valid_unlockables[2].new()
+	var rand_unlocks = {}
+	var valid_unlocks_names = valid_unlockables.keys()
+	print('\n')
+	print(valid_unlocks_names)
+	# select 3 different level unlockables
+	while rand_unlocks.size() < 3:
+		var rand = valid_unlocks_names.pick_random()
+		if not rand_unlocks.has(rand):
+			rand_unlocks[rand] = valid_unlockables[rand]
+	# get an array of instantiated level unlockable objects
+	print(rand_unlocks.keys())
+	var unlock_objects = rand_unlocks.values()
+	var inst_unlock_objects = [
+		unlock_objects[0].new(),
+		unlock_objects[1].new(),
+		unlock_objects[2].new()
 	]
 	# Pass the level unlockables off to the level up gui (it will associate each option with a button and display the description)
-	level_up_gui.load_level_unlock_options(fake_mod_list)
+	level_up_gui.load_level_unlock_options(inst_unlock_objects)
 
 	# tell the level up gui to un-hide itself and wait for the user to click one of the options
 	level_up_gui.enable_gui()
@@ -203,24 +235,18 @@ func trigger_level_up_gui():
 # function to apply the selected mod from the level up event and flag it as complete
 func finish_level_up_event(chosen_unlock : LevelUnlockable):
 	#TODO:  flush out this behavior once mods are actually added
-	#print("Selected Mod: ", chosen_unlock)
 
 	# Add this level unlockable to the list of activated unlockables
-	var repeat_unlock = false
-	for unlock : Array in active_level_unlockables:
-		# if the unlockable is already in the list of chosen unlockables, add one to the number of times it has been picked
-		if unlock[0] == chosen_unlock.name:
-			unlock[1] = unlock[1] + 1
-			repeat_unlock = true
-			print(chosen_unlock.name, " Has been unlocked ", unlock[1], " times!")
-	# if the unlock was not already present in the list, add it to the end
-	if not repeat_unlock:
-		var entry = [
-			chosen_unlock.name,
-			1
-		]
-		active_level_unlockables.append(entry)
-		print(chosen_unlock.name, " Has been unlocked for the first time!")
+	# get any occurances of this unlock being selected before
+	var count = active_unlockables.get(chosen_unlock.name, 0)
+	# increment the number of times it has been chosen
+	count = count + 1
+	# set the new value (creates a new entry in the dict if it didn't already exist)
+	active_unlockables[chosen_unlock.name] = count
+	print(chosen_unlock.name, " Has been unlocked ", count, " times!")
+	
+	# update the set of valid unlockables based on the chosen unlock
+	update_valid_unlockables(chosen_unlock)
 
 	# add new modifiers from the level unlock object to the game
 	add_new_mods(chosen_unlock.mods)
@@ -318,6 +344,71 @@ func add_mods_to_dict(mod_dict : Dictionary, mod_list : Array):
 func add_new_abilities(_ability_list : Array):
 	# TODO: Implement this function once abilities are implemented
 	pass
+
+
+# ====================== Functions that deal with Level Unlockable logic ======================
+
+
+# function to return a list of potential level unlockables that can be initially generated
+func get_initial_valid_unlockables():
+	var initial_unlocks = {}
+	# add any unlockable that have no pre-requisites to the list of initial unlocks
+	for unlock in potential_unlockables:
+		# create a temporary instantiation of the unlock so that it's initial attributes are accessible
+		var temp_inst = unlock.new()
+		# if there are no pre-requisite unlocks needed, then add the unlock to the array of initial unlocks
+		if temp_inst.pre_reqs.size() == 0:
+			initial_unlocks[temp_inst.name] = unlock
+	return initial_unlocks
+
+
+# function to update the list of valid unlockables after an unlockable was chosen
+func update_valid_unlockables(chosen_unlock : LevelUnlockable):
+	# Check to see if the chosen unlock can be chosen again
+	if not chosen_unlock.repeatable:
+		# the chosen unlock is not repeatable, remove it from the valid unlock dict
+		valid_unlockables.erase(chosen_unlock.name)
+	
+	# Check to see if this unlockable belongs to a family
+	var in_family = false
+	if chosen_unlock.family != Consts.UnlockFamily_e.no_family:
+		in_family = true
+	
+	# Check to see if any of the defined 'next unlocks' unlockables are valid
+	for next_unlock in chosen_unlock.next_unlocks:
+		# ensure that this next unlockable exists within the list of potential unlockables
+		var is_potential = false
+		for unlock in potential_unlockables:
+			if unlock == next_unlock:
+				is_potential = true
+				break
+		# create a temp instance of the next unlock to load its initial values
+		var temp : LevelUnlockable = next_unlock.new()
+		# check to see if all of this unlockables pre-reqs have been met
+		var pre_reqs_met = true
+		if is_potential:
+			for unlock in temp.pre_reqs:
+				# create a temp intance of the pre-req to load its initial values
+				var temp2 : LevelUnlockable = unlock.new()
+				# check to see if the unlockable has been unlocked
+				if not active_unlockables.has(temp2.name):
+					# if we have not unlocked this pre-req then disable the flag and break the loop
+					pre_reqs_met = false
+					break
+		# if all the pre-reqs were met, and the next unlock exists within the set of potential unlocks, add it to the valid unlocks
+		if is_potential and pre_reqs_met:
+			valid_unlockables[temp.name] = next_unlock
+
+	# if chosen unlockable belongs to a family, remove any valid unlockable belonging to a different branch of the same family
+	if in_family:
+		var names : Array = valid_unlockables.keys()
+		for unlock_name in names:
+			# create a temp instance of the Level Unlockable to load its initial values
+			var temp : LevelUnlockable = valid_unlockables[unlock_name].new()
+			# if the selected unlockable belongs to the same family but a different branch as the chosen ulockable, remove it
+			if (temp.family == chosen_unlock.family) and (temp.branch != chosen_unlock.branch):
+				valid_unlockables.erase(unlock_name)
+
 
 
 
