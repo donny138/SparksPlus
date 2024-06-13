@@ -54,6 +54,7 @@ debug_color = Color(0.819608, 0.266667, 0.290196, 0.419608)
 one_shot = true
 
 [node name="PickupMagnetRange" type="Area2D" parent="."]
+visible = false
 collision_mask = 8
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="PickupMagnetRange"]
@@ -97,6 +98,19 @@ rotation = 0.00232828
 
 [node name="PlayerCamera" type="Camera2D" parent="."]
 zoom = Vector2(0.75, 0.75)
+
+[node name="OuterSparkContainerWall" type="RigidBody2D" parent="."]
+collision_layer = 4
+collision_mask = 4
+mass = 100.0
+gravity_scale = 0.0
+freeze = true
+freeze_mode = 1
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="OuterSparkContainerWall"]
+build_mode = 1
+polygon = PackedVector2Array(7, -75, 56, -59, 82, -6, 69, 45, 4, 72, -49, 63, -79, 17, -77, -30, -41, -61)
+disabled = true
 
 [connection signal="body_entered" from="." to="." method="_on_body_entered"]
 [connection signal="redraw_defense_orbit" from="." to="DefenseOrbit" method="_on_spark_source_redraw_orbits"]

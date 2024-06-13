@@ -135,7 +135,7 @@ func _process(delta):
 		# fire the old spark along the vector
 		old_spark.fire_spark(angle)
 		# update the orbit points of all remanining sparks so that they are evenly distributed
-		auto_adjust_spark_orbit_pos()
+		#auto_adjust_spark_orbit_pos()
 
 
 # function to perform initial hud updates once the hud gui exists
@@ -186,7 +186,7 @@ func remove_spark(spark):
 		print("ERROR!  Spark not found!")
 
 	# adjust the orbits of the remaining sparks
-	auto_adjust_spark_orbit_pos()
+	#auto_adjust_spark_orbit_pos()
 
 
 # function to handle being hit by an enemy
@@ -342,7 +342,7 @@ func _on_spark_spawn_count_down_timeout():
 		sparks.append(new_spark)
 
 		# alter the orbit percentage of each spark so they orbit evenly
-		auto_adjust_spark_orbit_pos()
+		#auto_adjust_spark_orbit_pos()
 	
 	# test code to see if the redraw orbit signals work
 	# update:  They do!  use this signal when there are new modifiers affecting the orbit size
@@ -368,6 +368,16 @@ func _on_body_entered(body):
 	# this way any unique behavior for a unique enemy can occur
 	print("SPARK SOURCE DETECTED ENEMY HIT")
 	body.hit_spark_source()
+
+	pass # Replace with function body.
+
+
+# this function is called when an object exists the inner wall of the collision thing for the first time
+func _on_inner_spark_container_wall_body_exited(body):
+	# this will activate for sparks just after they spawn.  
+	# call the function to enable the physics collisions for the spark
+	body.enable_physics_collision()
+	print("ENABLING: ",body)
 
 	pass # Replace with function body.
 
@@ -398,6 +408,9 @@ func handle_control_time(freeze_time):
 	else:
 		# disable the is_paused flag
 		is_paused = false
+
+
+
 
 
 

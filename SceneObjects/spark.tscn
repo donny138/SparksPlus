@@ -3,10 +3,11 @@
 [ext_resource type="Texture2D" uid="uid://cup78ocqjehxw" path="res://Assets/Sparks/spark_texture_0.png" id="1_8xbfd"]
 [ext_resource type="Script" path="res://SceneObjects/spark.gd" id="1_s2jq7"]
 
-[node name="Spark" type="Area2D"]
+[node name="Spark" type="RigidBody2D"]
 scale = Vector2(1, 1.00489)
 collision_layer = 4
-collision_mask = 2
+collision_mask = 4
+gravity_scale = 0.0
 script = ExtResource("1_s2jq7")
 base_damage = 5.0
 base_speed = 250.0
@@ -16,11 +17,18 @@ metadata/_edit_group_ = true
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("1_8xbfd")
 
-[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="."]
+[node name="PhysicsCollisionPolygon" type="CollisionPolygon2D" parent="."]
 polygon = PackedVector2Array(1.5, 1.5, 1.5, 4, -1.5, 4, -1.5, 1.5, -4, 1.5, -4, -1.5, -1.5, -1.5, -1.5, -4, 1.5, -4, 1.5, -1.5, 4, -1.5, 4, 1.5)
 
 [node name="LifeTime" type="Timer" parent="."]
 one_shot = true
 
-[connection signal="body_entered" from="." to="." method="_on_body_entered"]
+[node name="EnemyHitDetection" type="Area2D" parent="."]
+collision_layer = 4
+collision_mask = 2
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="EnemyHitDetection"]
+polygon = PackedVector2Array(1.5, 1.5, 1.5, 4, -1.5, 4, -1.5, 1.5, -4, 1.5, -4, -1.5, -1.5, -1.5, -1.5, -4, 1.5, -4, 1.5, -1.5, 4, -1.5, 4, 1.5)
+
 [connection signal="timeout" from="LifeTime" to="." method="_on_life_time_timeout"]
+[connection signal="body_entered" from="EnemyHitDetection" to="." method="_on_enemy_hit_detection_body_entered"]
