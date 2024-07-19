@@ -92,6 +92,9 @@ func _ready():
 	# connect to the time control signal
 	get_parent().control_time.connect(handle_control_time)
 
+	# debug print
+	print("SPARK TYPE: ", spark_type)
+
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -135,7 +138,7 @@ func _process(delta):
 		# fire the old spark along the vector
 		old_spark.fire_spark(angle)
 		# update the orbit points of all remanining sparks so that they are evenly distributed
-		auto_adjust_spark_orbit_pos()
+		#auto_adjust_spark_orbit_pos()
 
 
 # function to perform initial hud updates once the hud gui exists
@@ -186,7 +189,7 @@ func remove_spark(spark):
 		print("ERROR!  Spark not found!")
 
 	# adjust the orbits of the remaining sparks
-	auto_adjust_spark_orbit_pos()
+	#auto_adjust_spark_orbit_pos()
 
 
 # function to handle being hit by an enemy
@@ -261,7 +264,8 @@ func update_attributes():
 	max_health = Consts.calc_mods(health_mods, base_health)
 	# the current health should (percentage wise) be the same as before the mod was applied
 	cur_health = max_health * health_ratio
-	level_hud.update_health(cur_health, max_health)
+	if level_hud != null:
+		level_hud.update_health(cur_health, max_health)
 
 	# Modify Speed
 	var speed_mods = all_mods.get(Consts.ModAttribute_e.speed, [])
@@ -335,13 +339,17 @@ func _on_spark_spawn_count_down_timeout():
 
 		# add the spark as a child of the level scene
 		get_parent().add_child(new_spark)
+		# add any ability objects that need to be generated with the new spark to the new spark
+		for ability in level_scene.spark_abilities:
+			var new_ability = ability.instantiate()
+			new_spark.add_child(new_ability)
 		# add the spark to the list of sparks in the level scene
 		level_scene.active_sparks.append(new_spark)
 		# add the spark to the list of sparks in orbit around this spark source
 		sparks.append(new_spark)
 
 		# alter the orbit percentage of each spark so they orbit evenly
-		auto_adjust_spark_orbit_pos()
+		#auto_adjust_spark_orbit_pos()
 	
 	# test code to see if the redraw orbit signals work
 	# update:  They do!  use this signal when there are new modifiers affecting the orbit size
@@ -367,6 +375,16 @@ func _on_body_entered(body):
 	# this way any unique behavior for a unique enemy can occur
 	print("SPARK SOURCE DETECTED ENEMY HIT")
 	body.hit_spark_source()
+
+	pass # Replace with function body.
+
+
+# this function is called when an object exists the inner wall of the collision thing for the first time
+func _on_inner_spark_container_wall_body_exited(body):
+	# this will activate for sparks just after they spawn.  
+	# call the function to enable the physics collisions for the spark
+	body.enable_physics_collision()
+	print("ENABLING: ",body)
 
 	pass # Replace with function body.
 
@@ -397,6 +415,9 @@ func handle_control_time(freeze_time):
 	else:
 		# disable the is_paused flag
 		is_paused = false
+
+
+
 
 
 

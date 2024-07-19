@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://bkglyy0ww4y3v"]
+
+[ext_resource type="Script" path="res://src/Abilities/SparkObjects/OnHit_StrongerTogether.gd" id="1_jfw4n"]
+
+[node name="OnHit_StrongerTogether" type="Node2D"]
+script = ExtResource("1_jfw4n")

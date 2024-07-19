@@ -9,7 +9,7 @@ TODO:
 	- add ability for them to be hit by sparks
 """
 
-extends RigidBody2D
+class_name Base_Enemy extends RigidBody2D
 
 # TODO:
 # - create an attribute class to track the stats and modifiers of a generic enemy
@@ -27,7 +27,9 @@ extends RigidBody2D
 @export var base_speed = 100		# this is how fast the enemy will move
 @export var base_damage = 5			# this is how much damage the enemy will do if it hits the player
 @export var base_attack_ct = 0.5 	# this is the attack cooldown time for this enemy
+@export var base_defense = 1.0		# this is how much incomming attack damage is divided by before affecting health
 @export var enemy_name : String 	# this is the name of this kind of enemy
+
 
 # temp configurable attributes
 @export var xp_orb : PackedScene
@@ -40,6 +42,7 @@ var cur_health						# tracks the current amount of health this enemy has
 var cur_speed						# the current speed (pixels / second) this enemy moves at
 var cur_damage						# the current damage the enemy deals on hit
 var cur_attack_ct					# the current cooldown between enemy attacks
+var cur_defense						# the current value of this objects defense
 
 # local modifiers and abilities
 var mods = {}						# tracks the dict of modifiers that apply to this enemy object
@@ -48,7 +51,7 @@ var abilities = []					# tracks the list of abilities that apply to this enemy o
 # internal attributes of this enemy
 var rot_rate = TAU/4 				# this is how fast the enemy rotates
 var rot_dir = 0						# this affects the direction of rotation
-var active_debufs = []				# a list of debuffs currently affecting the enemy (damage over time, slow, etc)
+var active_debuffs = []				# a list of debuffs currently affecting the enemy (damage over time, slow, etc)
 var spark_source 					# this is a pointer to the spark source object (the player)
 var level_scene						# this is a pointer to the level scene object that runs the game
 var is_attack_available = true 		# this controls whether or not this enemy can hit the player
@@ -119,7 +122,16 @@ func got_hit(spark):
 		# handle being hit by the spark
 		was_hit = true
 		# take damage based on the damage that the given spark object will deal
-		cur_health = cur_health - spark.cur_damage
+		var dmg = (spark.cur_damage / cur_defense)
+		cur_health = cur_health - dmg
+		# if dmg text is enabled, then display the dmg
+		if level_scene.enable_dmg_text:
+			var dmg_text = level_scene.dmg_text_scene.instantiate()
+			dmg_text.position = position
+			dmg_text.position.y = dmg_text.position.y - 50
+			dmg_text.position.x = dmg_text.position.x - 25
+			dmg_text.display_dmg(dmg)
+			level_scene.add_child(dmg_text)
 		# if hp has run out, then the enemy dies
 		if cur_health <= 0:
 			on_death()
@@ -254,6 +266,10 @@ func update_attributes():
 	# Modify Attack Cooldown
 	var attack_ct_mods = all_mods.get(Consts.ModAttribute_e.active_abil_ct, [])
 	cur_attack_ct = Consts.calc_mods(attack_ct_mods, base_attack_ct) # gets set when the enemy hits an attack, don't need to set timer value here
+
+	# Modify Defense
+	var defense_mods = all_mods.get(Consts.ModAttribute_e.defense, [])
+	cur_defense = Consts.calc_mods(defense_mods, base_defense)
 
 
 

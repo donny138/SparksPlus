@@ -62,6 +62,25 @@ enum UnlockFamily_e{
 }
 
 
+# Defines types of active abilities.  This allows the game or other abilities to categorize ability objects
+enum AbilityType_e{
+    debuff,             # Effect counts as a debuff, usually hinders the object it is applied to
+    buff,               # Effect counts as a buff, usually helps the object it is applied to
+    override,           # Effect overrides or replaces an existing game object or game behavior
+    new,                # Effect adds some new behavior to existing game objects
+    passive             # Effect is passive or doesn't fall under any of the above categories
+}
+
+
+# Defines types of ability activations.  This allows the game to recognize when to apply different abilities
+enum AbilityActivationType_e{
+    on_hit,             # Effect is applied on-hit
+    on_death,           # Effect is applied on-death
+    retaliate,          # Effect is applied when parent gets hit
+    passive             # Effect is passively applied or controls when it applies itself
+}
+
+
 # Defines all of the potential damage types that can be applied
 # TODO: Implement this later, once some unlockables require this
 enum DmgType_e{

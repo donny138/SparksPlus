@@ -3,6 +3,7 @@
 This Level Unlockable increases the speed sparks travel at and makes quick successive hits deal bonus damage
 """
 
+# TODO:  repalce this with a version of the "Stronger Together" effect
 
 class_name RepeatedHits extends LevelUnlockable
 
@@ -12,7 +13,7 @@ func _init():
 
     # define values specific to this class
     name = "Death by a Thousand Cuts"
-    desc = "Sparks fly 25% faster and apply a debuff to enemies that increases the damage they take from sparks by 20% a stack"
+    desc = "Sparks fly 25% faster and apply a debuff to enemies that increases the damage they take from sparks by 5% a stack"
     family = Consts.UnlockFamily_e.spark_production
     branch = 0
     branch_name = "Quantity"
@@ -34,8 +35,8 @@ func _init():
     spark_prod.mod_value = 1.25  
     mods.append(spark_prod)
 
-    # create and store an ability that applies a debuff which buffs successive hits by 20% a stack
-    # TODO: Implement this once abilities have been implemented
+    # add the ability script for the "Stronger Together" ability which will add this feature into the game
+    abilities.append(ScriptStrongerTogether)
 
     # There is nothing else needed to define this unlockable
     pass

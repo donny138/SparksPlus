@@ -10,7 +10,7 @@ TODO:
 	
 """
 
-extends Node2D
+class_name LevelScene extends Node2D
 
 # signals
 signal control_time(freeze_time : bool)  # this signal will be emitted and controls if time should pass for all game objects
@@ -37,6 +37,10 @@ var level_mods = {}			# a dict of modifiers that apply to the level scene object
 var source_mods = {}		# a dict of modifiers that apply to the spark source object
 var spark_mods = {}			# a dict of modifiers that apply to EVERY spark object
 var enemy_mods = {}			# a dict of modifiers that apply to EVERY enemy object
+var init_spark_objs = []	# a list of objects to add as children to (all) sparks when they are created
+
+# placeholder ability attributes, may or may not be used
+# TODO: use these or remove them
 var level_abilities = []	
 var source_abilities = []
 var spark_abilities = []
@@ -51,6 +55,11 @@ var active_unlockables = {}	# a dict of level unlockables that the player has ac
 var time_passed_sec 		# tracks the number of seconds that have passed since the level started
 var pause_menu_active = false
 var disable_paise_menu = false
+
+# configurable setting vars
+var enable_dmg_text = true
+var dmg_text_scene = preload("res://SceneObjects/damage_value_text.tscn")
+
 
 # TEMPORARY VARIABLES ONLY
 # list of level unlockables that can appear for testing
@@ -339,11 +348,14 @@ func add_mods_to_dict(mod_dict : Dictionary, mod_list : Array):
 			mod_dict[mod.name] = array
 	
 
-
 # function to add a new abilities array and apply the new abilities to each object in the game
-func add_new_abilities(_ability_list : Array):
-	# TODO: Implement this function once abilities are implemented
-	pass
+func add_new_abilities(ability_list : Array):
+	# iterate through the list of abilities and apply them to the game
+	for i in ability_list:
+		# create a new instance of the ability script class
+		var ability = i.new()
+		#assert(ability.type == AbilityScript, "ABILITY NOT OF CORRECT TYPE!!!!!!")
+		ability.apply_ability(self)
 
 
 # ====================== Functions that deal with Level Unlockable logic ======================
