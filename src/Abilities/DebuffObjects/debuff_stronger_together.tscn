@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://boc6p37sxebq3"]
+
+[ext_resource type="Script" path="res://src/Abilities/DebuffObjects/debuff_stronger_together.gd" id="1_y8aw6"]
+
+[node name="Debuff_Stronger_Together" type="Node2D"]
+script = ExtResource("1_y8aw6")
+life_time = 5
+
+[node name="LifeTime" type="Timer" parent="."]
+wait_time = 5.0
+one_shot = true
+
+[connection signal="timeout" from="LifeTime" to="." method="remove_ability"]

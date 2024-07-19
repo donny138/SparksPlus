@@ -44,7 +44,7 @@ var fired_life_time						# time that the spark lasts after being fired before ex
 
 # modifiers and abilities
 var mods = {}							# a dict of modifiers that apply specifically to this spark
-var abilities = []						# a list of abilities that apply specifically to this spark
+var abilities = {}						# a dict of abilities that apply specifically to this spark, keys are ability activations
 
 
 
@@ -218,6 +218,15 @@ func remove_self():
 	queue_free()
 
 
+# function to apply any on-hit effects
+func apply_on_hit_effects(target : Node2D):
+	var on_hit_effects = abilities.get(Consts.AbilityActivationType_e.on_hit, [])
+	for effect : BaseAbilityObject in on_hit_effects:
+		# trigger the on hit effect
+		var status = effect.activate_ability(target)
+		# debug print
+		print("Triggered On-Hit Effect: ", effect, " Status: ", status)
+
 
 # ======================== Modifier Handling ============================
 
@@ -286,6 +295,8 @@ func _on_enemy_hit_detection_body_entered(body):
 	if(hit_enemy):
 		# decrement the sparks remaining durability
 		cur_durability = cur_durability - 1
+		# apply any on-hit effects
+		apply_on_hit_effects(body)
 		# if the spark is out of durability, destroy the spark
 		if cur_durability == 0:
 			handle_spark_break()

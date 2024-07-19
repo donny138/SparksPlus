@@ -92,6 +92,9 @@ func _ready():
 	# connect to the time control signal
 	get_parent().control_time.connect(handle_control_time)
 
+	# debug print
+	print("SPARK TYPE: ", spark_type)
+
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -336,6 +339,10 @@ func _on_spark_spawn_count_down_timeout():
 
 		# add the spark as a child of the level scene
 		get_parent().add_child(new_spark)
+		# add any ability objects that need to be generated with the new spark to the new spark
+		for ability in level_scene.spark_abilities:
+			var new_ability = ability.instantiate()
+			new_spark.add_child(new_ability)
 		# add the spark to the list of sparks in the level scene
 		level_scene.active_sparks.append(new_spark)
 		# add the spark to the list of sparks in orbit around this spark source
